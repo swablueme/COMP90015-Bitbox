@@ -1,2 +1,2 @@
 # SWEN90016
-Private repository for assignment 1
+Code repository for the Bitbox assignment (asignment 1)
