@@ -13,16 +13,25 @@ import unimelb.bitbox.util.FileSystemManager.FileSystemEvent;
 import java.util.concurrent.CompletableFuture;
 import java.nio.ByteBuffer;
 import java.util.Base64;
+import unimelb.bitbox.util.Document;
+import java.util.concurrent.*;
 
 public class ServerMain implements FileSystemObserver {
 
     private static Logger log = Logger.getLogger(ServerMain.class.getName());
     protected FileSystemManager fileSystemManager;
+    
+    public static BlockingQueue<Document> messageQueue = new LinkedBlockingQueue<Document>();
+
 
     public ServerMain() throws NumberFormatException, IOException, NoSuchAlgorithmException {
         fileSystemManager = new FileSystemManager(Configuration.getConfigurationValue("path"), this);
     }
 
+    public void actOnMessages() {
+        
+    }
+    
     @Override
     public void processFileSystemEvent(FileSystemEvent fileSystemEvent) {
         Logger log = Logger.getLogger(FileSystemManager.class.getName());
