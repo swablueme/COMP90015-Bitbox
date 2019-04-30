@@ -4,7 +4,10 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.net.Socket;
 import java.net.ServerSocket;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 import unimelb.bitbox.util.Document;
+import java.util.*;
 
 public class pleaseworkClient implements Runnable {
 
@@ -33,12 +36,12 @@ public class pleaseworkClient implements Runnable {
                 String received = this.in.readLine();
                 if (received != null) {
                     //displays message received
-                    System.out.println("READING: " + received);        
+                    System.out.println("READING: " + received);
                     Document message = Document.parse(received);
                     readMessages(message);
                     //if we were rejected or we don't like the peer :(
                     if (foundPeer == false) {
-                        System.out.println("exiting from socket");
+                        System.out.println("Found peer was not found, exiting from socket");
                         myclient.close();
                         return;
                     }
@@ -59,7 +62,7 @@ public class pleaseworkClient implements Runnable {
                 foundPeer = true;
                 System.out.println("our peerlist is now: " + peerList.getPeers());
             }
-        //if we are the server owo
+            //if we are the server owo
         } else if (message.getString("command").equals("HANDSHAKE_REQUEST")) {
             myclient.setCONNECTION_REQUESTdetails(message);
             System.out.println("set parameters");
@@ -71,22 +74,37 @@ public class pleaseworkClient implements Runnable {
                     System.out.println("our peerlist is now: " + peerList.getPeers());
                     myclient.write(jsonMarshaller.createHANDSHAKE(this.myhost, this.myport, "HANDSHAKE_RESPONSE"));
                     foundPeer = true;
-                }
-                //if our list is too full already
+                } //if our list is too full already
                 else {
                     myclient.write(jsonMarshaller.createCONNECTION_REFUSED(peerList.getPeerList()));
                     foundPeer = false;
                 }
-            }
-            //if the peer is trying to connect a SECOND TIME!
+            } //if the peer is trying to connect a SECOND TIME!
             else {
                 myclient.write(jsonMarshaller.createINVALID_PROTOCOL());
                 foundPeer = false;
-                
+
             }
-        //if we the peer got rejected
+            //if we the peer got rejected
         } else if (message.getString("command").equals("CONNECTION_REFUSED")) {
+            ArrayList<Document> receivedPeers = (ArrayList<Document>) message.get("peers");
+            /*
+             for (Document Peer:receivedPeers) {
+             System.out.println((String) Peer.getString("host"));
+             System.out.println(Peer.get("port").toString());
+             }
+             System.out.println(receivedPeers);
+             */
+
             foundPeer = false;
+        } else if (message.getString("command").equals("FILE_CREATE_REQUEST")) {
+            String newPath = message.getString("pathName");
+            try {
+                ServerMain.messageQueue.put(message);
+            } catch (Exception e) {
+                exceptionHandler.handleException(e);
+            }
+
         }
     }
 

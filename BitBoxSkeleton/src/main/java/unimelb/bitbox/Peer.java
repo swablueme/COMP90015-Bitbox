@@ -10,6 +10,7 @@ import java.util.concurrent.CompletableFuture;
 import unimelb.bitbox.util.Configuration;
 import unimelb.bitbox.util.Document;
 import unimelb.bitbox.util.FileSystemManager;
+import java.util.*;
 
 public class Peer {
 
@@ -24,6 +25,7 @@ public class Peer {
         String peers = Configuration.getConfiguration().get("peers");
         
        
+        ArrayList<pleaseworkClient> attemptedtoconnectclients= new ArrayList<>();
         //split all the peers which are seperated by commas from the config file
         String[] mypeers = peers.split(",");
         for (String peer : mypeers) {
@@ -34,7 +36,9 @@ public class Peer {
                 //if this fails it's because the client is offline
                 myClient = new clientSocket(hostport[0], Integer.parseInt(hostport[1]));                
                 pleaseworkClient myClientinstance = new pleaseworkClient(myClient, host, Integer.parseInt(port));
+                attemptedtoconnectclients.add(myClientinstance);
                 new Thread(myClientinstance).start();
+                
 
             } catch (Exception e) {
                 exceptionHandler.handleException(e);
@@ -46,5 +50,16 @@ public class Peer {
         
         System.out.println("THESE ARE THE CURRENT PROPERTIES OF THE SERVER: "+ Configuration.getConfiguration());
         new Thread(new pleaseworkServer(host, Integer.parseInt(port))).start();
+        
+        /* infinite loop that checks if we have found a peer
+        while(true) {
+            for (pleaseworkClient client:attemptedtoconnectclients) {
+                System.out.println(client.foundPeer);
+            }
+            
+        }
+        */
+                
+                
     }
 }

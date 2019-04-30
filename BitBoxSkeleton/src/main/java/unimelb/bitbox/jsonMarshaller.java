@@ -58,14 +58,18 @@ public class jsonMarshaller {
     static String createCONNECTION_REFUSED(ArrayList<clientSocket> peerList) {
         Document CONNECTION_REFUSED = new Document();
         CONNECTION_REFUSED.append("message", "connection limit reached");
-        Document peers = new Document();
+        
         CONNECTION_REFUSED.append("command", "CONNECTION_REFUSED");
+        ArrayList<Document> peerleest = new ArrayList<>();
+        
         for (clientSocket peer : peerList) {
+            Document peers = new Document();
             peers.append("host", peer.connRequestHost());
             peers.append("port", peer.getconnRequestServerPort());
+            peerleest.add(peers);
         }
 
-        CONNECTION_REFUSED.append("peers", peers);
+        CONNECTION_REFUSED.append("peers", peerleest);
         return CONNECTION_REFUSED.toJson();
 
     }
