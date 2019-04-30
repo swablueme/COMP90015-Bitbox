@@ -1,0 +1,51 @@
+    /*
+    static String createFILE_CREATE_REQUEST(Document file, String fileName) {
+        Document FILE_CREATE_REQUEST = new Document();
+        FILE_CREATE_REQUEST.append("command", "FILE_CREATE_REQUEST");
+        FILE_CREATE_REQUEST.append("fileDescriptor", file);
+        FILE_CREATE_REQUEST.append("pathName", fileName);
+        return FILE_CREATE_REQUEST.toJson();
+    }
+
+    static String createDIRECTORY_CREATE_REQUEST(Document file, String pathName) {
+        Document DIRECTORY_CREATE_REQUEST = new Document();
+        DIRECTORY_CREATE_REQUEST.append("command", "DIRECTORY_CREATE_REQUEST");;
+        DIRECTORY_CREATE_REQUEST.append("pathName", pathName);
+        return DIRECTORY_CREATE_REQUEST.toJson();
+    }
+
+    static String createFILE_CREATE_RESPONSE(Document file, String fileName,
+            Messages message) {
+        Document FILE_CREATE_RESPONSE = new Document();
+        FILE_CREATE_RESPONSE.append("command", "FILE_CREATE_RESPONSE");
+        FILE_CREATE_RESPONSE.append("fileDescriptor", file);
+        FILE_CREATE_RESPONSE.append("pathName", fileName);
+        FILE_CREATE_RESPONSE.append("message", message.getValue());
+        if (message == Messages.ready) {
+            FILE_CREATE_RESPONSE.append("status", true);
+        } else {
+            FILE_CREATE_RESPONSE.append("status", false);
+        }
+        return FILE_CREATE_RESPONSE.toJson();
+
+    }
+
+    static String FILE_DELETE_REQUEST(Document file, String fileName) {
+        Document FILE_DELETE_REQUEST = new Document();
+        FILE_DELETE_REQUEST.append("command", "FILE_DELETE_REQUEST");
+        FILE_DELETE_REQUEST.append("fileDescriptor", file);
+        FILE_DELETE_REQUEST.append("pathName", fileName);
+        return FILE_DELETE_REQUEST.toJson();
+    
+
+    }
+    
+        static String createFILE_MODIFY_REQUEST(Document file, String fileName) {
+        Document FILE_MODIFY_REQUEST = new Document();
+        FILE_MODIFY_REQUEST.append("command", "FILE_MODIFY_REQUEST");
+        FILE_MODIFY_REQUEST.append("fileDescriptor", file);
+        FILE_MODIFY_REQUEST.append("pathName", fileName);
+        return FILE_MODIFY_REQUEST.toJson();
+    }
+
+     */
