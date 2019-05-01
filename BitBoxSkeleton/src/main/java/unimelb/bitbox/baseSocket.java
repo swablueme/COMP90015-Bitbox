@@ -46,7 +46,7 @@ public class baseSocket<T> {
     }
     //close method that should be able to close a ServerSocket or a regular client Socket
     public <T extends AutoCloseable> void close() {
-        System.out.println("trying to close");
+        System.out.println("trying to close socket");
         if (socket != null) {
             try {
                 socket.close();

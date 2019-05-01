@@ -46,9 +46,11 @@ public class clientSocket extends baseSocket {
         try {
             out.write(message + "\n");
             out.flush();
-            log.info("tried to write");
+            System.out.println("wrote");
+            prettyPrinter.print(message);
         } catch (Exception e) {
-            System.out.printf("\n failed to write message %f \n\n", message);
+            System.out.println("failed to write message");
+            prettyPrinter.print(message);
             exceptionHandler.handleException(e);
         }
     }
@@ -60,7 +62,7 @@ public class clientSocket extends baseSocket {
         Document hostport = (Document) handshakeDetails.get("hostPort");
         this.connRequestServerPort = Integer.parseInt(hostport.get("port").toString());
         this.connRequestHost = (String) ((Document) handshakeDetails.get("hostPort")).getString("host");
-        System.out.printf("set port %d, host %s \n", connRequestServerPort, connRequestHost);
+        //System.out.printf("set port %d, host %s \n", connRequestServerPort, connRequestHost);
 
     }
 

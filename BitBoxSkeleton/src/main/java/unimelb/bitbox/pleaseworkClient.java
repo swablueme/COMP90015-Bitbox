@@ -8,6 +8,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import unimelb.bitbox.util.Document;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 public class pleaseworkClient implements Runnable {
 
@@ -36,7 +37,8 @@ public class pleaseworkClient implements Runnable {
                 String received = this.in.readLine();
                 if (received != null) {
                     //displays message received
-                    System.out.println("READING: " + received);
+                    System.out.println("READING: ");
+                    prettyPrinter.print(received);
                     Document message = Document.parse(received);
                     readMessages(message);
                     //if we were rejected or we don't like the peer :(
@@ -98,13 +100,30 @@ public class pleaseworkClient implements Runnable {
 
             foundPeer = false;
         } else if (message.getString("command").equals("FILE_CREATE_REQUEST")) {
+            String responseMessage = actOnMessages.fileCreateResponse(message);
+            myclient.write(responseMessage);
+            String bytesRequest = actOnMessages.fileBytesRequest("FILE_CREATE_REQUEST", message);
+            myclient.write(bytesRequest);
+
+            /*
             String newPath = message.getString("pathName");
             try {
                 ServerMain.messageQueue.put(message);
             } catch (Exception e) {
                 exceptionHandler.handleException(e);
             }
-
+             */
+        } else if (message.getString("command").equals("FILE_BYTES_REQUEST")) {
+            String responseMessage = actOnMessages.fileBytesRequestResponse(message);
+            myclient.write(responseMessage);
+        } else if (message.getString("command").equals("FILE_BYTES_RESPONSE")) {
+            String responseMessage = actOnMessages.processReceivedFile(message);
+            if (!responseMessage.equals("done")) {
+                myclient.write(responseMessage);
+            }
+        } else if (message.getString("command").equals("FILE_DELETE_REQUEST")) {
+            String responseMessage = actOnMessages.fileDeleteResponse(message);
+            myclient.write(responseMessage);
         }
     }
 
