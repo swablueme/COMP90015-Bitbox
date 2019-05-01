@@ -17,19 +17,15 @@ import unimelb.bitbox.util.Document;
 import java.util.concurrent.*;
 
 public class ServerMain implements FileSystemObserver {
-
+    
     private static Logger log = Logger.getLogger(ServerMain.class.getName());
     protected FileSystemManager fileSystemManager;
     
     public static BlockingQueue<Document> messageQueue = new LinkedBlockingQueue<Document>();
-
-
+    
     public ServerMain() throws NumberFormatException, IOException, NoSuchAlgorithmException {
         fileSystemManager = new FileSystemManager(Configuration.getConfigurationValue("path"), this);
-    }
-
-    public void actOnMessages() {
-        
+        new actOnMessages(fileSystemManager);
     }
     
     @Override
@@ -92,5 +88,3 @@ public class ServerMain implements FileSystemObserver {
     //System.out.println(fileSystemEvent.fileDescriptor.lastModified);
     // TODO: process events
 }
-
-

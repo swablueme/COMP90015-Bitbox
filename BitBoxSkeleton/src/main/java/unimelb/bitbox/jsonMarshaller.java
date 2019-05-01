@@ -40,7 +40,6 @@ public class jsonMarshaller {
         } else if ((eventName == "DIRECTORY_CREATE") || (eventName == "DIRECTORY_DELETE")) {
             jsoninprogress.append("pathName", Event.pathName);
         }
-
         return jsoninprogress.toJson();
     }
 
@@ -58,10 +57,10 @@ public class jsonMarshaller {
     static String createCONNECTION_REFUSED(ArrayList<clientSocket> peerList) {
         Document CONNECTION_REFUSED = new Document();
         CONNECTION_REFUSED.append("message", "connection limit reached");
-        
+
         CONNECTION_REFUSED.append("command", "CONNECTION_REFUSED");
         ArrayList<Document> peerleest = new ArrayList<>();
-        
+
         for (clientSocket peer : peerList) {
             Document peers = new Document();
             peers.append("host", peer.connRequestHost());
@@ -84,7 +83,7 @@ public class jsonMarshaller {
     }
 
     static String createFILE_BYTES_REQUEST(Document file, String fileName,
-            Integer position, Integer length) {
+            Long position, Long length) {
         Document FILE_BYTES_REQUEST = new Document();
         FILE_BYTES_REQUEST.append("command", "FILE_BYTES_REQUEST");
         FILE_BYTES_REQUEST.append("fileDescriptor", file);
@@ -94,8 +93,23 @@ public class jsonMarshaller {
         return FILE_BYTES_REQUEST.toJson();
     }
 
+    static String createFILE_CREATE_RESPONSE(Document file, String fileName,
+            Messages message) {
+        Document FILE_CREATE_RESPONSE = new Document();
+        FILE_CREATE_RESPONSE.append("command", "FILE_CREATE_RESPONSE");
+        FILE_CREATE_RESPONSE.append("fileDescriptor", file);
+        FILE_CREATE_RESPONSE.append("pathName", fileName);
+        FILE_CREATE_RESPONSE.append("message", message.getValue());
+        if (message == Messages.ready) {
+            FILE_CREATE_RESPONSE.append("status", true);
+        } else {
+            FILE_CREATE_RESPONSE.append("status", false);
+        }
+        return FILE_CREATE_RESPONSE.toJson();
+    }
+
     static String createFILE_BYTES_RESPONSE(Document file, String fileName,
-            Integer position, Integer length, Messages message,
+            Long position, Long length, Messages message,
             ByteBuffer content) {
         Document FILE_BYTES_RESPONSE = new Document();
         FILE_BYTES_RESPONSE.append("command", "FILE_BYTES_RESPONSE");
@@ -143,6 +157,26 @@ public class jsonMarshaller {
             FILE_MODIFY_RESPONSE.append("status", false);
         }
         return FILE_MODIFY_RESPONSE.toJson();
+    }
+
+    //makes a json (in string format) for a DIRECTORY_CREATE_REQUEST
+    //message is an enum
+    //command is the command we want in the json
+    //pathName is the pathName we want in the json
+    static String createDIRECTORY_CREATE_REQUEST(String pathName) {
+        Document DIRECTORY_CREATE_REQUEST = new Document();
+        DIRECTORY_CREATE_REQUEST.append("command", "DIRECTORY_CREATE_REQUEST");
+        DIRECTORY_CREATE_REQUEST.append("pathName", pathName);
+
+        return DIRECTORY_CREATE_REQUEST.toJson();
+    }
+    //makes a json (in string format) for a DIRECTORY_CREATE_RESPONSE
+    static String createDIRECTORY_CREATE_RESPONSE(String pathName, String message, Boolean status) {
+        Document DIRECTORY_CREATE_RESPONSE = new Document();
+        DIRECTORY_CREATE_RESPONSE.append("command", "DIRECTORY_CREATE_RESPONSE");
+        DIRECTORY_CREATE_RESPONSE.append("pathName", pathName);
+        DIRECTORY_CREATE_RESPONSE.append("status", status);
+        return DIRECTORY_CREATE_RESPONSE.toJson();
     }
 
 }
