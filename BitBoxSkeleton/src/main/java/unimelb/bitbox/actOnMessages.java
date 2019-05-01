@@ -34,10 +34,15 @@ public class actOnMessages {
                 status = jsonMarshaller.Messages.ready;
             } catch (Exception e) {
                 exceptionHandler.handleException(e);
+                status = jsonMarshaller.Messages.problemCreatingFile;
             }
         } else {
-            //otherwise we couldn't create the file
-            status = jsonMarshaller.Messages.unsafePathname;
+            if(fileSystemManager.isSafePathName(pathname) == false){
+                status = jsonMarshaller.Messages.unsafePathname;
+            }
+            else if(fileSystemManager.fileNameExists(pathname) == true){
+                status = jsonMarshaller.Messages.pathnameExists;
+            }
         }
         //makes a json with the required information
         return jsonMarshaller.createFILE_CREATE_RESPONSE(unmarshalledmessage.getFileDescriptorDocument(), pathname, status);
@@ -133,15 +138,63 @@ public class actOnMessages {
     }
 
     public static String directoryCreateRequestResponse(Document message) {
-        //TODO make a method that responds to a DIRECTORY_CREATE_REQUEST by actually creating a directory
+        //make a method that responds to a DIRECTORY_CREATE_REQUEST by actually creating a directory
         //use dirNameExists and makeDirectory from the FileSystemManager
-        return "";
+        jsonunMarshaller unmarshalledmessage = new jsonunMarshaller(message);
+        String pathname = unmarshalledmessage.getpathName();
+        jsonMarshaller.Messages responseMessage = null;
+        if (((fileSystemManager.isSafePathName(pathname)) == true)
+                && (fileSystemManager.dirNameExists(pathname) == false)) {
+            try {
+                //creates the directory
+                fileSystemManager.makeDirectory(pathname);
+                //this is the message field for the json
+                responseMessage = jsonMarshaller.Messages.directoryCreated;
+            } catch (Exception e) {
+                exceptionHandler.handleException(e);
+                responseMessage = jsonMarshaller.Messages.problemCreatingDirectory;
+            }
+        } else {
+            if (fileSystemManager.isSafePathName(pathname) == false) {
+                responseMessage = jsonMarshaller.Messages.unsafePathname;
+            } else if (fileSystemManager.dirNameExists(pathname) == true) {
+                responseMessage = jsonMarshaller.Messages.pathnameExists;
+            }
+        }
+        //makes a json with the required information
+        return jsonMarshaller.createDIRECTORY_CREATE_RESPONSE(pathname,responseMessage);
+
     }
 
     public static String directoryDeleteRequestResponse(Document message) {
-        //TODO make a method that responds to a DIRECTORY_DELETE_REQUEST by actually deleting a directory
+        //make a method that responds to a DIRECTORY_DELETE_REQUEST by actually deleting a directory
         //use dirNameExists and deleteDirectory from the FileSystemManager
-        return "";
+        jsonunMarshaller unmarshalledmessage = new jsonunMarshaller(message);
+        String pathname = unmarshalledmessage.getpathName();
+        jsonMarshaller.Messages responseMessage = null;
+        if ((fileSystemManager.dirNameExists(pathname) == true)
+                && (fileSystemManager.isSafePathName(pathname) == true)){
+            try {
+                Boolean status = fileSystemManager.deleteDirectory(pathname);
+                if (status == true) {
+                    //sets status messages if it deleted
+                    responseMessage = jsonMarshaller.Messages.directoryDeleted;
+                } else {
+                    //otherwise it didn't get deleted
+                    responseMessage = jsonMarshaller.Messages.problemDeletingDirectory;
+                }
+            } catch (Exception e) {
+                exceptionHandler.handleException(e);
+                responseMessage = jsonMarshaller.Messages.problemDeletingDirectory;
+            }
+        } else {
+            if (fileSystemManager.isSafePathName(pathname) == false) {
+                responseMessage = jsonMarshaller.Messages.unsafePathname;
+            } else if (fileSystemManager.dirNameExists(pathname) == false) {
+                responseMessage = jsonMarshaller.Messages.pathnameNotExists;
+            }
+        }
+            return jsonMarshaller.createDIRECTORY_DELETE_RESPONSE(pathname,responseMessage);
     }
 
 }
