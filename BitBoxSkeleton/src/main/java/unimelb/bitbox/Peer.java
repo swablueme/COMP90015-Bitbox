@@ -10,6 +10,8 @@ import java.util.concurrent.CompletableFuture;
 import unimelb.bitbox.util.Configuration;
 import unimelb.bitbox.util.Document;
 import unimelb.bitbox.util.FileSystemManager;
+import unimelb.bitbox.util.HostPort;
+
 import java.util.*;
 
 public class Peer {
@@ -28,22 +30,27 @@ public class Peer {
         ArrayList<pleaseworkClient> attemptedtoconnectclients= new ArrayList<>();
         //split all the peers which are seperated by commas from the config file
         String[] mypeers = peers.split(",");
-        for (String peer : mypeers) {
-            String[] hostport = peer.split(":");
-            clientSocket myClient = null;
-            try {
-                //for each client attempt to create a socket and thread
-                //if this fails it's because the client is offline
-                myClient = new clientSocket(hostport[0], Integer.parseInt(hostport[1]));                
-                pleaseworkClient myClientinstance = new pleaseworkClient(myClient, host, Integer.parseInt(port));
-                attemptedtoconnectclients.add(myClientinstance);
-                new Thread(myClientinstance).start();
-                
+        //add them to the queue
+        for (String peer:mypeers){
+            peerFinding.add(new HostPort(peer));
+        }
 
-            } catch (Exception e) {
-                exceptionHandler.handleException(e);
-                continue;
-            }
+        while((!peerFinding.isEmpty())&&(!peerList.isFull())){
+            clientSocket myClient = null;
+                try {
+                    //for each client attempt to create a socket and thread
+                    //if this fails it's because the client is offline
+                    HostPort hostPort = peerFinding.pop();
+                    myClient = new clientSocket(hostPort.host, hostPort.port);
+                    pleaseworkClient myClientinstance = new pleaseworkClient(myClient, host, Integer.parseInt(port));
+                    attemptedtoconnectclients.add(myClientinstance);
+                    new Thread(myClientinstance).start();
+                    //wait some time for the CONNECTION_REFUSED to be added to the peerFinding list
+                    Thread.sleep(1000);
+                } catch (Exception e) {
+                    exceptionHandler.handleException(e);
+                    continue;
+                }
 
         }
         //makes a server thread
