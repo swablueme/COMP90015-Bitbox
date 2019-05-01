@@ -23,8 +23,19 @@ public class clientSocket extends baseSocket {
         super("client from config");
         try {
             clientSock = new Socket(host, port);
+
+//            Kai's socket timeout exception!!!
+//            Socket timeout set to 5 seconds
+            socket.setSoTime(5000);
+
             super.bufferedStreams = super.createBufferedStreams(this.clientSock);
-        } catch (Exception e) {
+        }
+        catch (SocketTimeOut e)
+        {
+//            Handle exception if socket times out
+
+        }
+        catch (Exception e) {
             exceptionHandler.handleException(e);
         }
         
