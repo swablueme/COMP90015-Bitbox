@@ -64,6 +64,7 @@ public class pleaseworkClient implements Runnable {
                 foundPeer = true;
                 System.out.println("our peerlist is now: " + peerList.getPeers());
             }
+            //what else? do we close the socket?
             //if we are the server owo
         } else if (message.getString("command").equals("HANDSHAKE_REQUEST")) {
             myclient.setCONNECTION_REQUESTdetails(message);
@@ -90,6 +91,7 @@ public class pleaseworkClient implements Runnable {
             //if we the peer got rejected
         } else if (message.getString("command").equals("CONNECTION_REFUSED")) {
             ArrayList<Document> receivedPeers = (ArrayList<Document>) message.get("peers");
+            peerFinding.add(receivedPeers);
             /*
              for (Document Peer:receivedPeers) {
              System.out.println((String) Peer.getString("host"));
