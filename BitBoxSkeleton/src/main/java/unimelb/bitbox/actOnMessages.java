@@ -216,6 +216,10 @@ public class actOnMessages implements Runnable {
         }
             return jsonMarshaller.createDIRECTORY_DELETE_RESPONSE(pathname,responseMessage);
     }
+    
+    public static void generateSyncEvents() {
+        fileSystemManager.generateSyncEvents();
+    }
     @Override
     public void run() {
         System.out.println("acting on message");
