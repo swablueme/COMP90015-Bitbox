@@ -14,6 +14,7 @@ public class peerList {
     private static final Map<String, String> config = Configuration.getConfiguration();
     private static Logger log = Logger.getLogger(Peer.class.getName());
 
+
     //erm I guess it prints the arraylist...
     public static synchronized String getPeers() {
         return knownPeers.toString();
@@ -54,6 +55,9 @@ public class peerList {
                 .map(peer -> (BufferedReader) peer.getBufferedInputStream())
                 .collect(Collectors.toCollection(ArrayList::new));
 
+    }
+    public static boolean isFull(){
+        return(knownPeers.size()== Integer.parseInt(config.get("maximumIncommingConnections")));
     }
 
 }
