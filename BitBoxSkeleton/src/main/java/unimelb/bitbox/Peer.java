@@ -17,28 +17,29 @@ public class Peer {
     private static Logger log = Logger.getLogger(Peer.class.getName());
 
     public static void main(String[] args) throws IOException, NumberFormatException, NoSuchAlgorithmException {
+//        ==================== SERVER WITHIN PEER
         //loads up your file manager on the regular instance
         ServerMain instance = new ServerMain();
         //load configs from the configuration file
         String port = Configuration.getConfiguration().get("port");
         String host =  Configuration.getConfiguration().get("advertisedName");
         String peers = Configuration.getConfiguration().get("peers");
-        
-       
+
+//        ==================== CLIENT WITHIN PEER
         ArrayList<pleaseworkClient> attemptedtoconnectclients= new ArrayList<>();
         //split all the peers which are seperated by commas from the config file
         String[] mypeers = peers.split(",");
         for (String peer : mypeers) {
             String[] hostport = peer.split(":");
             clientSocket myClient = null;
+
+            //for each client attempt to create a socket and thread
+            //if this fails it's because the client is offline
             try {
-                //for each client attempt to create a socket and thread
-                //if this fails it's because the client is offline
                 myClient = new clientSocket(hostport[0], Integer.parseInt(hostport[1]));                
                 pleaseworkClient myClientinstance = new pleaseworkClient(myClient, host, Integer.parseInt(port));
                 attemptedtoconnectclients.add(myClientinstance);
                 new Thread(myClientinstance).start();
-                
 
             } catch (Exception e) {
                 exceptionHandler.handleException(e);
