@@ -20,7 +20,8 @@ public class jsonMarshaller {
         pathnameExists("pathname already exists"),
         pathnameNotExists("pathname does not exist"),
         successfulRead("successful read"),
-        unsuccessfulRead("unsuccessful read");
+        unsuccessfulRead("unsuccessful read"),
+        fileCreated("file created");
 
         private String value;
 
