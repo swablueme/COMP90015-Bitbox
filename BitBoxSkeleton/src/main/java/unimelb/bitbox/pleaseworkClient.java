@@ -66,6 +66,7 @@ public class pleaseworkClient implements Runnable {
                 peerList.addKnownPeers(myclient);
                 foundPeer = true;
                 System.out.println("our peerlist is now: " + peerList.getPeers());
+                actOnMessages.generateSyncEvents();
             }
             //what else? do we close the socket?
             //if we are the server owo
@@ -80,6 +81,7 @@ public class pleaseworkClient implements Runnable {
                     System.out.println("our peerlist is now: " + peerList.getPeers());
                     myclient.write(jsonMarshaller.createHANDSHAKE(this.myhost, this.myport, "HANDSHAKE_RESPONSE"));
                     foundPeer = true;
+                    actOnMessages.generateSyncEvents();
                 } //if our list is too full already
                 else {
                     myclient.write(jsonMarshaller.createCONNECTION_REFUSED(peerList.getPeerList()));
