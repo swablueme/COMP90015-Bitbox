@@ -23,15 +23,19 @@ public class actOnMessages {
         Long lastmodified = unmarshalledmessage.getlastmodified();
         //initialise messages variable
         jsonMarshaller.Messages status = null;
+        Boolean isCreated = false;
         //checks if path is safe (it's not being used by anything else) and if filename exists
         if (((fileSystemManager.isSafePathName(pathname)) == true)
                 && (fileSystemManager.fileNameExists(pathname) == false)) {
             //we make a fileloader to hold what we are going to write in     
             try {
                 //creates a file loader which the file goes into
-                fileSystemManager.createFileLoader(pathname, md5, 0, lastmodified);
+                isCreated = fileSystemManager.createFileLoader(pathname, md5, 0, lastmodified);
                 //this is the message field for the json
-                status = jsonMarshaller.Messages.ready;
+                if (isCreated) {
+                    status = jsonMarshaller.Messages.ready;
+                } else {
+                    status = jsonMarshaller.Messages.problemCreatingFile;}
             } catch (Exception e) {
                 exceptionHandler.handleException(e);
                 status = jsonMarshaller.Messages.problemCreatingFile;
@@ -195,6 +199,42 @@ public class actOnMessages {
             }
         }
             return jsonMarshaller.createDIRECTORY_DELETE_RESPONSE(pathname,responseMessage);
+    }
+    public static String fileModifyRequestResponse (Document message){
+        jsonunMarshaller unmarshalledmessage = new jsonunMarshaller(message);
+        String pathname = unmarshalledmessage.getpathName();
+        String md5 = unmarshalledmessage.getmd5();
+        Long lastmodified = unmarshalledmessage.getlastmodified();
+        jsonMarshaller.Messages responseMessage = null;
+        boolean isCreated;
+        if((fileSystemManager.fileNameExists(pathname,md5) == false)
+                && (fileSystemManager.isSafePathName(pathname) == true)
+                && (fileSystemManager.fileNameExists(pathname) == true)){
+            //we make a fileloader to hold what we are going to write in
+            try {
+                fileSystemManager.cancelFileLoader(pathname);
+                //creates a file loader which the file goes into
+                isCreated = fileSystemManager.modifyFileLoader(pathname, md5, lastmodified);
+                //this is the message field for the json
+                if (isCreated) {
+                    responseMessage = jsonMarshaller.Messages.ready;
+                } else {
+                    responseMessage = jsonMarshaller.Messages.problemModifyingFile;}
+            } catch (Exception e) {
+                exceptionHandler.handleException(e);
+                responseMessage = jsonMarshaller.Messages.problemModifyingFile;
+            }
+        } else {
+            if(fileSystemManager.isSafePathName(pathname) == false){
+                responseMessage = jsonMarshaller.Messages.unsafePathname;
+            } else if(fileSystemManager.fileNameExists(pathname,md5) == true){
+                responseMessage = jsonMarshaller.Messages.fileExistWithSameContent;
+            } else if(fileSystemManager.fileNameExists(pathname) == false){
+                responseMessage = jsonMarshaller.Messages.pathnameNotExists;
+            }
+        }
+        return jsonMarshaller.createFILE_MODIFY_RESPONSE(unmarshalledmessage.getFileDescriptorDocument(),pathname,
+                responseMessage);
     }
 
 }
