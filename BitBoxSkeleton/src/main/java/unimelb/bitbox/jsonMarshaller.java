@@ -10,10 +10,15 @@ public class jsonMarshaller {
     public enum Messages {
         ready("file loader ready"),
         fileDeleted("file deleted"),
+        directoryCreated("directory created"),
+        directoryDeleted("directory deleted"),
         unsafePathname("unsafe pathname given"),
         problemCreatingFile("there was a problem creating the file"),
+        problemCreatingDirectory("there was a problem creating the directory"),
         problemDeletingFile("there was a problem deleting the file"),
+        problemDeletingDirectory("there was a problem deleting the directory"),
         pathnameExists("pathname already exists"),
+        pathnameNotExists("pathname does not exist"),
         successfulRead("successful read"),
         unsuccessfulRead("unsuccessful read");
 
@@ -171,12 +176,30 @@ public class jsonMarshaller {
         return DIRECTORY_CREATE_REQUEST.toJson();
     }
     //makes a json (in string format) for a DIRECTORY_CREATE_RESPONSE
-    static String createDIRECTORY_CREATE_RESPONSE(String pathName, String message, Boolean status) {
+    static String createDIRECTORY_CREATE_RESPONSE(String pathName, Messages message) {
         Document DIRECTORY_CREATE_RESPONSE = new Document();
         DIRECTORY_CREATE_RESPONSE.append("command", "DIRECTORY_CREATE_RESPONSE");
         DIRECTORY_CREATE_RESPONSE.append("pathName", pathName);
-        DIRECTORY_CREATE_RESPONSE.append("status", status);
+        DIRECTORY_CREATE_RESPONSE.append("message", message.getValue());
+        if(message == Messages.directoryCreated){
+            DIRECTORY_CREATE_RESPONSE.append("status","true");
+        }else{
+            DIRECTORY_CREATE_RESPONSE.append("status","false");
+        }
         return DIRECTORY_CREATE_RESPONSE.toJson();
+    }
+    static String createDIRECTORY_DELETE_RESPONSE(String pathName, Messages message){
+        Document DIRECTORY_DELETE_RESPONSE = new Document();
+        DIRECTORY_DELETE_RESPONSE.append("command","DIRECTORY_DELETE_RESPONSE");
+        DIRECTORY_DELETE_RESPONSE.append("pathName",pathName);
+        DIRECTORY_DELETE_RESPONSE.append("message", message.getValue());
+        if (message == Messages.directoryDeleted) {
+            DIRECTORY_DELETE_RESPONSE.append("status", true);
+        } else {
+            DIRECTORY_DELETE_RESPONSE.append("status", false);
+        }
+
+        return DIRECTORY_DELETE_RESPONSE.toJson();
     }
 
 }
