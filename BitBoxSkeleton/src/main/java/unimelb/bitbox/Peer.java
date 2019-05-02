@@ -19,21 +19,24 @@ public class Peer {
     private static Logger log = Logger.getLogger(Peer.class.getName());
 
     public static void main(String[] args) throws IOException, NumberFormatException, NoSuchAlgorithmException {
+//        ==================== SERVER WITHIN PEER
         //loads up your file manager on the regular instance
         ServerMain instance = new ServerMain();
         //load configs from the configuration file
         String port = Configuration.getConfiguration().get("port");
         String host =  Configuration.getConfiguration().get("advertisedName");
         String peers = Configuration.getConfiguration().get("peers");
-        
-       
+
+//        ==================== CLIENT WITHIN PEER
         ArrayList<pleaseworkClient> attemptedtoconnectclients= new ArrayList<>();
         //split all the peers which are seperated by commas from the config file
         String[] mypeers = peers.split(",");
+
         //add them to the queue
         for (String peer:mypeers){
             peerFinding.add(new HostPort(peer));
         }
+
 
         while((!peerFinding.isEmpty())&&(!peerList.isFull())){
             clientSocket myClient = null;
