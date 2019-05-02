@@ -40,7 +40,7 @@ public class pleaseworkClient implements Runnable {
                     System.out.println("READING: ");
                     prettyPrinter.print(received);
                     Document message = Document.parse(received);
-                    readMessages(message);
+                    new Thread(readMessages(message)).start();
                     //if we were rejected or we don't like the peer :(
                     if (foundPeer == false) {
                         System.out.println("Found peer was not found, exiting from socket");
@@ -48,13 +48,16 @@ public class pleaseworkClient implements Runnable {
                         return;
                     }
                 }
+                if (received == null) {
+                    System.out.println("PEER CONNECTION WAS CLOSED");
+                }
             }
         } catch (Exception e) {
             exceptionHandler.handleException(e);
         }
     }
 
-    public void readMessages(Document message) {
+    public String readMessages(Document message) {
         //if we are the client connecting to another server
         if (message.getString("command").equals("HANDSHAKE_RESPONSE")) {
             //saves the contents of message into variables
@@ -92,6 +95,7 @@ public class pleaseworkClient implements Runnable {
         } else if (message.getString("command").equals("CONNECTION_REFUSED")) {
             ArrayList<Document> receivedPeers = (ArrayList<Document>) message.get("peers");
             peerFinding.add(receivedPeers);
+            
             /*
              for (Document Peer:receivedPeers) {
              System.out.println((String) Peer.getString("host"));
@@ -104,23 +108,31 @@ public class pleaseworkClient implements Runnable {
         } else if (message.getString("command").equals("FILE_CREATE_REQUEST")) {
             String responseMessage = actOnMessages.fileCreateResponse(message);
             myclient.write(responseMessage);
-            String bytesRequest = actOnMessages.fileBytesRequest("FILE_CREATE_REQUEST", message);
-            myclient.write(bytesRequest);
+            jsonunMarshaller producedmessage = new jsonunMarshaller(Document.parse(responseMessage));
+            
+            System.out.println(producedmessage.getMessage());
+            //what do we do if unsafepathname
+            if (!(producedmessage.getMessage()).equals("pathname already exists")&&
+                    !(producedmessage.getMessage()).equals("unsafe pathname given")) {
+                String bytesRequest = actOnMessages.fileBytesRequest("FILE_CREATE_REQUEST", message);
+                myclient.write(bytesRequest);
+            }
 
             /*
-            String newPath = message.getString("pathName");
-            try {
-                ServerMain.messageQueue.put(message);
-            } catch (Exception e) {
-                exceptionHandler.handleException(e);
-            }
+             String newPath = message.getString("pathName");
+             try {
+             ServerMain.messageQueue.put(message);
+             } catch (Exception e) {
+             exceptionHandler.handleException(e);
+             }
              */
         } else if (message.getString("command").equals("FILE_BYTES_REQUEST")) {
+            System.out.println("got a request");
             String responseMessage = actOnMessages.fileBytesRequestResponse(message);
             myclient.write(responseMessage);
         } else if (message.getString("command").equals("FILE_BYTES_RESPONSE")) {
             String responseMessage = actOnMessages.processReceivedFile(message);
-            if (!responseMessage.equals("done")) {
+            if (!responseMessage.equals("done") && !responseMessage.equals("issue")) {
                 myclient.write(responseMessage);
             }
         } else if (message.getString("command").equals("FILE_DELETE_REQUEST")) {
@@ -133,7 +145,10 @@ public class pleaseworkClient implements Runnable {
             String responseMessage = actOnMessages.directoryDeleteRequestResponse(message);
             myclient.write(responseMessage);
         }
+        return "";
     }
+    
+    
 
     @Override
     public void run() {

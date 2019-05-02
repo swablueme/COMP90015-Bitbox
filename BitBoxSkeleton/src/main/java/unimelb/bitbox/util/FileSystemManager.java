@@ -513,7 +513,10 @@ public class FileSystemManager extends Thread {
 	public boolean checkShortcut(String pathName) throws NoSuchAlgorithmException, IOException {
 		pathName=separatorsToSystem(pathName);
 		synchronized(this) {
+                        System.out.println(loadingFiles);
+                        
 			String fullPathName=root+FileSystems.getDefault().getSeparator()+pathName;
+                        System.out.println(fullPathName);
 			if(!loadingFiles.containsKey(fullPathName)) return false;
 			boolean check=false;
 			try {
@@ -697,6 +700,8 @@ public class FileSystemManager extends Thread {
 			channel.write(src, position);
 		}
 		public boolean checkWriteComplete() throws NoSuchAlgorithmException, IOException {
+                        
+                        
 			String currentMd5 = hashFile(file,pathName,0,raf);
 			if(currentMd5.equals(md5)) {
 				lock.release();

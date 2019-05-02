@@ -5,7 +5,7 @@ import unimelb.bitbox.util.Document;
 import unimelb.bitbox.util.FileSystemManager;
 import java.nio.ByteBuffer;
 
-public class actOnMessages {
+public class actOnMessages implements Runnable {
 
     static FileSystemManager fileSystemManager;
 
@@ -13,6 +13,7 @@ public class actOnMessages {
         this.fileSystemManager = fileSystemManager;
     }
 
+   
     //a response to a file create
     public static String fileCreateResponse(Document message) {
         //creates a jsonunmarshaller object which has convenient methods for getting information out of a Document 
@@ -21,6 +22,7 @@ public class actOnMessages {
         String pathname = unmarshalledmessage.getpathName();
         String md5 = unmarshalledmessage.getmd5();
         Long lastmodified = unmarshalledmessage.getlastmodified();
+        Long filesize = unmarshalledmessage.getFileSize();
         //initialise messages variable
         jsonMarshaller.Messages status = null;
         //checks if path is safe (it's not being used by anything else) and if filename exists
@@ -29,7 +31,11 @@ public class actOnMessages {
             //we make a fileloader to hold what we are going to write in     
             try {
                 //creates a file loader which the file goes into
-                fileSystemManager.createFileLoader(pathname, md5, 0, lastmodified);
+                fileSystemManager.createFileLoader(pathname, md5, filesize, lastmodified);
+                Boolean checkedShortcut = fileSystemManager.checkShortcut(pathname);
+                if (checkedShortcut) {
+                    status = jsonMarshaller.Messages.fileCreated;
+                }
                 //this is the message field for the json
                 status = jsonMarshaller.Messages.ready;
             } catch (Exception e) {
@@ -57,16 +63,20 @@ public class actOnMessages {
         if (!type.equals("FILE_CREATE_REQUEST")) {
             position = unmarshalledmessage.getPosition();
             length = unmarshalledmessage.getLength();
-            position = Math.min(unmarshalledmessage.getFileSize(), position + blocksize);
+            position = position + length;
+            if ((position+length) > unmarshalledmessage.getFileSize()) {
+                length=unmarshalledmessage.getFileSize()-position;
+            }
+            System.out.println("length: "+ length+"| position: "+position);
         } else {
             position = (long) 0;
-            //need to change later
-            length = unmarshalledmessage.getFileSize();
+            length = Math.min(blocksize, unmarshalledmessage.getFileSize());
         }
         return jsonMarshaller.createFILE_BYTES_REQUEST(unmarshalledmessage.getFileDescriptorDocument(), pathname, position, length);
     }
 
     public static String fileBytesRequestResponse(Document message) {
+        System.out.println("inside the request response");
         jsonunMarshaller unmarshalledmessage = new jsonunMarshaller(message);
         String pathname = unmarshalledmessage.getpathName();
         Long position = unmarshalledmessage.getPosition();
@@ -77,13 +87,18 @@ public class actOnMessages {
         ByteBuffer buffer = null;
         jsonMarshaller.Messages status = null;
         String base64 = null;
+        System.out.println("attempting to try and read");
         try {
+            System.out.println("trying to read");
+            System.out.println("positon"+position);
+            System.out.println("length"+length);
             buffer = fileSystemManager.readFile(md5, position, length);
+            System.out.println("buffer: "+buffer);
             status = jsonMarshaller.Messages.successfulRead;
         } catch (Exception e) {
+            System.out.println("Exception occurred");
             exceptionHandler.handleException(e);
             status = jsonMarshaller.Messages.unsuccessfulRead;
-
         }
         return jsonMarshaller.createFILE_BYTES_RESPONSE(unmarshalledmessage.getFileDescriptorDocument(),
                 pathname, position, length, status, buffer);
@@ -98,13 +113,18 @@ public class actOnMessages {
         Long position = unmarshalledmessage.getPosition();
         try {
             fileSystemManager.writeFile(pathname, contentbuffer, position);
-            if (!fileSystemManager.checkWriteComplete(pathname)) {
+            //System.out.println("writing position: "+position);
+            Boolean done =fileSystemManager.checkWriteComplete(pathname);
+            System.out.println("download status, done is: "+done+"for file: "+pathname);
+            if (!done) {
                 String request = fileBytesRequest("more bytes", message);
                 return request;
             } else {
+                System.out.println("writing done!");
                 return "done";
             }
         } catch (Exception e) {
+            System.out.println("exception");
             exceptionHandler.handleException(e);
         }
         return "issue";
@@ -196,5 +216,10 @@ public class actOnMessages {
         }
             return jsonMarshaller.createDIRECTORY_DELETE_RESPONSE(pathname,responseMessage);
     }
+    @Override
+    public void run() {
+        System.out.println("acting on message");
+    }
+           
 
 }
