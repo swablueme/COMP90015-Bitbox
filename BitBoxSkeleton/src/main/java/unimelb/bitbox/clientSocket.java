@@ -23,6 +23,7 @@ public class clientSocket extends baseSocket {
         super("client from config");
         try {
             clientSock = new Socket(host, port);
+            clientSock.setSoTimeout(2000);
             super.bufferedStreams = super.createBufferedStreams(this.clientSock);
         } catch (Exception e) {
             exceptionHandler.handleException(e);
@@ -41,7 +42,7 @@ public class clientSocket extends baseSocket {
     }
 
     //this method writes a message to our socket
-    public void write(String message) {
+    public synchronized void write(String message) {
         BufferedWriter out = (BufferedWriter) super.getBufferedOutputStream();
         try {
             out.write(message + "\n");
