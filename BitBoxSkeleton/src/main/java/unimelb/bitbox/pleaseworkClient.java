@@ -1,14 +1,11 @@
 package unimelb.bitbox;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.net.Socket;
-import java.net.ServerSocket;
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
+
 import unimelb.bitbox.util.Document;
+import unimelb.bitbox.util.HostPort;
+
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 
 public class pleaseworkClient implements Runnable {
 
@@ -17,16 +14,33 @@ public class pleaseworkClient implements Runnable {
     Integer myport = null;
     String myhost = null;
     public Boolean foundPeer = null;
+    peerQueue peerQueue;
 
     pleaseworkClient(clientSocket myclient, String myhost, Integer myport) {;
         this.in = (BufferedReader) myclient.getBufferedInputStream();
         this.myclient = myclient;
         this.myport = myport;
         this.myhost = myhost;
+        this.peerQueue = new peerQueue();
         //if the client was not created via client accepts from the server 
         //and instead from configuration then it is the first one to try sending
         //requests
         if (myclient.type != "client from server") {
+            myclient.write(jsonMarshaller.createHANDSHAKE(this.myhost, this.myport, "HANDSHAKE_REQUEST"));
+        }
+    }
+
+    pleaseworkClient(clientSocket myclient, String myhost, Integer myport,peerQueue myQueue) {;
+        this.in = (BufferedReader) myclient.getBufferedInputStream();
+        this.myclient = myclient;
+        this.myport = myport;
+        this.myhost = myhost;
+        this.peerQueue = myQueue;
+        //if the client was not created via client accepts from the server
+        //and instead from configuration then it is the first one to try sending
+        //requests
+        if ((myclient.type != "client from server")
+                && (peerList.isKnownPeer(myclient) != true)) {
             myclient.write(jsonMarshaller.createHANDSHAKE(this.myhost, this.myport, "HANDSHAKE_REQUEST"));
         }
     }
@@ -69,6 +83,10 @@ public class pleaseworkClient implements Runnable {
                 foundPeer = true;
                 System.out.println("our peerlist is now: " + peerList.getPeers());
                 actOnMessages.generateSyncEvents();
+            }else{
+                System.out.println("Oppps!Duplicate connections!");
+                foundPeer = false;
+
             }
             //what else? do we close the socket?
             //if we are the server owo
@@ -98,8 +116,19 @@ public class pleaseworkClient implements Runnable {
             //if we the peer got rejected
         } else if (message.getString("command").equals("CONNECTION_REFUSED")) {
             ArrayList<Document> receivedPeers = (ArrayList<Document>) message.get("peers");
-            peerFinding.add(receivedPeers);
-
+            this.peerQueue.add(receivedPeers);
+            while(!this.peerQueue.isEmpty()) {
+                try {
+                    HostPort hostPort = this.peerQueue.pop();
+                    clientSocket nextClient = new clientSocket(hostPort.host, hostPort.port);
+                    pleaseworkClient myClientinstance = new pleaseworkClient(nextClient, this.myhost, this.myport, this.peerQueue);
+                    new Thread(myClientinstance).start();
+                    break;
+                }catch (Exception e) {
+                    exceptionHandler.handleException(e);
+                    continue;
+                }
+            }
             /*
              for (Document Peer:receivedPeers) {
              System.out.println((String) Peer.getString("host"));
@@ -158,6 +187,7 @@ public class pleaseworkClient implements Runnable {
                 myclient.write(bytesRequest);
             }
         }
+
         return "";
     }
 
@@ -167,4 +197,32 @@ public class pleaseworkClient implements Runnable {
         clientMain();
     }
 
+    public static class peerQueue {
+
+        private Queue<HostPort> queue;
+        private ArrayList<HostPort> visited;
+
+        peerQueue(){
+            this.queue = new LinkedList<>();
+            this.visited = new ArrayList<>();
+        }
+        public void add(HostPort hostPort){
+            if(!this.visited.contains(hostPort)) {
+                this.queue.offer(hostPort);
+                this.visited.add(hostPort);
+            }
+        }
+        public void add(ArrayList<Document> peerList){
+            for(Document peer:peerList) this.add(new HostPort(peer));
+        }
+        public void visit(HostPort hostPort){
+            this.visited.add(hostPort);
+        }
+        public HostPort pop(){
+            return this.queue.poll();
+        }
+        public boolean isEmpty(){
+            return this.queue.isEmpty();
+        }
+    }
 }
