@@ -4,6 +4,7 @@ import unimelb.bitbox.util.Configuration;
 import unimelb.bitbox.util.Document;
 import unimelb.bitbox.util.FileSystemManager;
 import java.nio.ByteBuffer;
+import java.util.*;
 
 public class actOnMessages implements Runnable {
 
@@ -12,7 +13,6 @@ public class actOnMessages implements Runnable {
     actOnMessages(FileSystemManager fileSystemManager) {
         this.fileSystemManager = fileSystemManager;
     }
-
 
     //a response to a file create
     public static String fileCreateResponse(Document message) {
@@ -47,10 +47,9 @@ public class actOnMessages implements Runnable {
                 status = jsonMarshaller.Messages.problemCreatingFile;
             }
         } else {
-            if(fileSystemManager.isSafePathName(pathname) == false){
+            if (fileSystemManager.isSafePathName(pathname) == false) {
                 status = jsonMarshaller.Messages.unsafePathname;
-            }
-            else if(fileSystemManager.fileNameExists(pathname) == true){
+            } else if (fileSystemManager.fileNameExists(pathname) == true) {
                 status = jsonMarshaller.Messages.pathnameExists;
             }
         }
@@ -69,10 +68,10 @@ public class actOnMessages implements Runnable {
             position = unmarshalledmessage.getPosition();
             length = unmarshalledmessage.getLength();
             position = position + length;
-            if ((position+length) > unmarshalledmessage.getFileSize()) {
-                length=unmarshalledmessage.getFileSize()-position;
+            if ((position + length) > unmarshalledmessage.getFileSize()) {
+                length = unmarshalledmessage.getFileSize() - position;
             }
-            System.out.println("length: "+ length+"| position: "+position);
+            System.out.println("length: " + length + "| position: " + position);
         } else {
             position = (long) 0;
             length = Math.min(blocksize, unmarshalledmessage.getFileSize());
@@ -95,10 +94,10 @@ public class actOnMessages implements Runnable {
         System.out.println("attempting to try and read");
         try {
             System.out.println("trying to read");
-            System.out.println("positon"+position);
-            System.out.println("length"+length);
+            System.out.println("positon" + position);
+            System.out.println("length" + length);
             buffer = fileSystemManager.readFile(md5, position, length);
-            System.out.println("buffer: "+buffer);
+            System.out.println("buffer: " + buffer);
             status = jsonMarshaller.Messages.successfulRead;
         } catch (Exception e) {
             System.out.println("Exception occurred");
@@ -119,8 +118,8 @@ public class actOnMessages implements Runnable {
         try {
             fileSystemManager.writeFile(pathname, contentbuffer, position);
             //System.out.println("writing position: "+position);
-            Boolean done =fileSystemManager.checkWriteComplete(pathname);
-            System.out.println("download status, done is: "+done+"for file: "+pathname);
+            Boolean done = fileSystemManager.checkWriteComplete(pathname);
+            System.out.println("download status, done is: " + done + "for file: " + pathname);
             if (!done) {
                 String request = fileBytesRequest("more bytes", message);
                 return request;
@@ -143,7 +142,8 @@ public class actOnMessages implements Runnable {
         Long lastmodified = unmarshalledmessage.getlastmodified();
         jsonMarshaller.Messages statusmessage = null;
         //checks if a file exists and tries to delete it
-        if (fileSystemManager.fileNameExists(pathname) == true) {
+        boolean isExist = fileSystemManager.fileNameExists(pathname);
+        if (isExist == true) {
             try {
                 Boolean status = fileSystemManager.deleteFile(pathname, lastmodified, md5);
                 if (status == true) {
@@ -158,7 +158,9 @@ public class actOnMessages implements Runnable {
                 statusmessage = jsonMarshaller.Messages.problemDeletingFile;
             }
         } else {
+            statusmessage = jsonMarshaller.Messages.pathnameExists;
         }
+        System.out.println("Debug has reached end of fileDeleteResponse");
         return jsonMarshaller.createFILE_DELETE_RESPONSE(unmarshalledmessage.getFileDescriptorDocument(), pathname, statusmessage);
     }
 
@@ -187,7 +189,7 @@ public class actOnMessages implements Runnable {
             }
         }
         //makes a json with the required information
-        return jsonMarshaller.createDIRECTORY_CREATE_RESPONSE(pathname,responseMessage);
+        return jsonMarshaller.createDIRECTORY_CREATE_RESPONSE(pathname, responseMessage);
 
     }
 
@@ -198,7 +200,7 @@ public class actOnMessages implements Runnable {
         String pathname = unmarshalledmessage.getpathName();
         jsonMarshaller.Messages responseMessage = null;
         if ((fileSystemManager.dirNameExists(pathname) == true)
-                && (fileSystemManager.isSafePathName(pathname) == true)){
+                && (fileSystemManager.isSafePathName(pathname) == true)) {
             try {
                 Boolean status = fileSystemManager.deleteDirectory(pathname);
                 if (status == true) {
@@ -219,8 +221,24 @@ public class actOnMessages implements Runnable {
                 responseMessage = jsonMarshaller.Messages.pathnameNotExists;
             }
         }
-            return jsonMarshaller.createDIRECTORY_DELETE_RESPONSE(pathname,responseMessage);
+        return jsonMarshaller.createDIRECTORY_DELETE_RESPONSE(pathname, responseMessage);
     }
+
+    public static void generateSyncEvents() {
+        ArrayList<FileSystemManager.FileSystemEvent> events = fileSystemManager.generateSyncEvents();
+        for (FileSystemManager.FileSystemEvent event : events) {
+            //disgusting repeated code
+            String myjson = jsonMarshaller.fileEventToJson(event);
+            ArrayList<clientSocket> peeroutputstreams = peerList.getPeerList();
+            if (!(peeroutputstreams.isEmpty())) {
+                for (clientSocket myclient : peeroutputstreams) {
+                    //sends a fileSystem event that has been triggered into the output stream
+                    myclient.write(myjson);
+                }
+            }
+        }
+    }
+
 
     public static String fileModifyRequestResponse (Document message){
         System.out.println("Trying to call modify requests");
@@ -264,6 +282,8 @@ public class actOnMessages implements Runnable {
         return jsonMarshaller.createFILE_MODIFY_RESPONSE(unmarshalledmessage.getFileDescriptorDocument(),pathname,
                 responseMessage);
     }
+
+
 
     @Override
     public void run() {
