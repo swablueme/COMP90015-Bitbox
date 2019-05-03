@@ -137,7 +137,8 @@ public class actOnMessages implements Runnable {
         Long lastmodified = unmarshalledmessage.getlastmodified();
         jsonMarshaller.Messages statusmessage = null;
         //checks if a file exists and tries to delete it
-        if (fileSystemManager.fileNameExists(pathname) == true) {
+        boolean isExist = fileSystemManager.fileNameExists(pathname);
+        if (isExist == true) {
             try {
                 Boolean status = fileSystemManager.deleteFile(pathname, lastmodified, md5);
                 if (status == true) {
@@ -152,7 +153,9 @@ public class actOnMessages implements Runnable {
                 statusmessage = jsonMarshaller.Messages.problemDeletingFile;
             }
         } else {
+            statusmessage = jsonMarshaller.Messages.pathnameExists;
         }
+        System.out.println("Debug has reached end of fileDeleteResponse");
         return jsonMarshaller.createFILE_DELETE_RESPONSE(unmarshalledmessage.getFileDescriptorDocument(), pathname, statusmessage);
     }
 
