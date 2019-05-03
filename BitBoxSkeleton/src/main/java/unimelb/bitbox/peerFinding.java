@@ -20,7 +20,9 @@ public class peerFinding {
         }
     }
     public static void add(ArrayList<Document> peerList){
-        for(Document peer:peerList) peerFinding.add(new HostPort(peer));
+        for(Document peer:peerList) {
+            peerFinding.add(new HostPort(peer));
+        }
     }
     public static HostPort pop(){
         return queue.poll();
