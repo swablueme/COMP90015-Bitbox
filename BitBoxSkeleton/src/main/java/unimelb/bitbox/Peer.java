@@ -34,27 +34,20 @@ public class Peer {
 
         //add them to the queue
         for (String peer:mypeers){
-            peerFinding.add(new HostPort(peer));
-        }
-
-
-        while((!peerFinding.isEmpty())&&(!peerList.isFull())){
+            HostPort hostPort = new HostPort(peer);
             clientSocket myClient = null;
-                try {
-                    //for each client attempt to create a socket and thread
-                    //if this fails it's because the client is offline
-                    HostPort hostPort = peerFinding.pop();
-                    myClient = new clientSocket(hostPort.host, hostPort.port);
-                    pleaseworkClient myClientinstance = new pleaseworkClient(myClient, host, Integer.parseInt(port));
-                    attemptedtoconnectclients.add(myClientinstance);
-                    new Thread(myClientinstance).start();
-                    //wait some time for the CONNECTION_REFUSED to be added to the peerFinding list
-                    Thread.sleep(1000);
-                } catch (Exception e) {
-                    exceptionHandler.handleException(e);
-                    continue;
-                }
-
+            try {
+                //for each client attempt to create a socket and thread
+                //if this fails it's because the client is offline
+                myClient = new clientSocket(hostPort.host, hostPort.port);
+                pleaseworkClient myClientinstance = new pleaseworkClient(myClient, host, Integer.parseInt(port));
+                attemptedtoconnectclients.add(myClientinstance);
+                new Thread(myClientinstance).start();
+                //wait some time for the CONNECTION_REFUSED to be added to the peerFinding list
+            } catch (Exception e) {
+                exceptionHandler.handleException(e);
+                continue;
+            }
         }
         //makes a server thread
         
