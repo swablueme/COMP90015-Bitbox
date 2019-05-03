@@ -58,7 +58,8 @@ public class actOnMessages {
         Long length = null;
         Long position = null;
         Long blocksize = Long.parseLong(Configuration.getConfiguration().get("blockSize"));
-        if (!type.equals("FILE_CREATE_REQUEST")) {
+        if (!type.equals("FILE_CREATE_REQUEST")
+                && (!type.equals("FILE_MODIFY_REQUEST"))) {
             position = unmarshalledmessage.getPosition();
             length = unmarshalledmessage.getLength();
             position = Math.min(unmarshalledmessage.getFileSize(), position + blocksize);
@@ -201,6 +202,7 @@ public class actOnMessages {
             return jsonMarshaller.createDIRECTORY_DELETE_RESPONSE(pathname,responseMessage);
     }
     public static String fileModifyRequestResponse (Document message){
+        System.out.println("Trying to call modify requests");
         jsonunMarshaller unmarshalledmessage = new jsonunMarshaller(message);
         String pathname = unmarshalledmessage.getpathName();
         String md5 = unmarshalledmessage.getmd5();
@@ -210,17 +212,21 @@ public class actOnMessages {
         if((fileSystemManager.fileNameExists(pathname,md5) == false)
                 && (fileSystemManager.isSafePathName(pathname) == true)
                 && (fileSystemManager.fileNameExists(pathname) == true)){
+            System.out.println("attempting to see if it's a valid path name");
             //we make a fileloader to hold what we are going to write in
             try {
+                System.out.println("Atttempting to cancel file loaders");
                 fileSystemManager.cancelFileLoader(pathname);
                 //creates a file loader which the file goes into
                 isCreated = fileSystemManager.modifyFileLoader(pathname, md5, lastmodified);
+                System.out.println("try creating file loader");
                 //this is the message field for the json
                 if (isCreated) {
                     responseMessage = jsonMarshaller.Messages.ready;
                 } else {
                     responseMessage = jsonMarshaller.Messages.problemModifyingFile;}
             } catch (Exception e) {
+                System.out.println("an exception occurreds");
                 exceptionHandler.handleException(e);
                 responseMessage = jsonMarshaller.Messages.problemModifyingFile;
             }
@@ -233,6 +239,7 @@ public class actOnMessages {
                 responseMessage = jsonMarshaller.Messages.pathnameNotExists;
             }
         }
+        System.out.println("attempting to make string");
         return jsonMarshaller.createFILE_MODIFY_RESPONSE(unmarshalledmessage.getFileDescriptorDocument(),pathname,
                 responseMessage);
     }
