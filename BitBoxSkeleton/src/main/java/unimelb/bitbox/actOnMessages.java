@@ -32,13 +32,11 @@ public class actOnMessages implements Runnable {
             //we make a fileloader to hold what we are going to write in
             try {
                 //creates a file loader which the file goes into
-                fileSystemManager.createFileLoader(pathname, md5, filesize, lastmodified);
+                isCreated = fileSystemManager.createFileLoader(pathname, md5, filesize, lastmodified);
                 Boolean checkedShortcut = fileSystemManager.checkShortcut(pathname);
                 if (checkedShortcut) {
                     status = jsonMarshaller.Messages.fileCreated;
-                }
-                //this is the message field for the json
-                if (isCreated) {
+                } else if (isCreated) {
                     status = jsonMarshaller.Messages.ready;
                 } else {
                     status = jsonMarshaller.Messages.problemCreatingFile;}
@@ -51,6 +49,8 @@ public class actOnMessages implements Runnable {
                 status = jsonMarshaller.Messages.unsafePathname;
             } else if (fileSystemManager.fileNameExists(pathname) == true) {
                 status = jsonMarshaller.Messages.pathnameExists;
+            } else{
+                status = jsonMarshaller.Messages.problemCreatingFile;
             }
         }
         //makes a json with the required information
@@ -158,7 +158,7 @@ public class actOnMessages implements Runnable {
                 statusmessage = jsonMarshaller.Messages.problemDeletingFile;
             }
         } else {
-            statusmessage = jsonMarshaller.Messages.pathnameExists;
+            statusmessage = jsonMarshaller.Messages.pathnameNotExists;
         }
         System.out.println("Debug has reached end of fileDeleteResponse");
         return jsonMarshaller.createFILE_DELETE_RESPONSE(unmarshalledmessage.getFileDescriptorDocument(), pathname, statusmessage);
@@ -174,9 +174,13 @@ public class actOnMessages implements Runnable {
                 && (fileSystemManager.dirNameExists(pathname) == false)) {
             try {
                 //creates the directory
-                fileSystemManager.makeDirectory(pathname);
+                boolean isCreated = fileSystemManager.makeDirectory(pathname);
                 //this is the message field for the json
-                responseMessage = jsonMarshaller.Messages.directoryCreated;
+                if (isCreated){
+                    responseMessage = jsonMarshaller.Messages.directoryCreated;
+                }else{
+                    responseMessage = jsonMarshaller.Messages.problemCreatingDirectory;
+                };
             } catch (Exception e) {
                 exceptionHandler.handleException(e);
                 responseMessage = jsonMarshaller.Messages.problemCreatingDirectory;
@@ -186,6 +190,8 @@ public class actOnMessages implements Runnable {
                 responseMessage = jsonMarshaller.Messages.unsafePathname;
             } else if (fileSystemManager.dirNameExists(pathname) == true) {
                 responseMessage = jsonMarshaller.Messages.pathnameExists;
+            }else{
+                responseMessage = jsonMarshaller.Messages.problemCreatingDirectory;
             }
         }
         //makes a json with the required information
@@ -219,6 +225,8 @@ public class actOnMessages implements Runnable {
                 responseMessage = jsonMarshaller.Messages.unsafePathname;
             } else if (fileSystemManager.dirNameExists(pathname) == false) {
                 responseMessage = jsonMarshaller.Messages.pathnameNotExists;
+            } else{
+                responseMessage = jsonMarshaller.Messages.problemDeletingDirectory;
             }
         }
         return jsonMarshaller.createDIRECTORY_DELETE_RESPONSE(pathname, responseMessage);
@@ -276,6 +284,8 @@ public class actOnMessages implements Runnable {
                 responseMessage = jsonMarshaller.Messages.fileExistWithSameContent;
             } else if(fileSystemManager.fileNameExists(pathname) == false){
                 responseMessage = jsonMarshaller.Messages.pathnameNotExists;
+            } else{
+                responseMessage = jsonMarshaller.Messages.problemModifyingFile;
             }
         }
         System.out.println("attempting to make string");
