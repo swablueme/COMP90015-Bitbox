@@ -95,7 +95,7 @@ public class pleaseworkClient implements Runnable {
         } else if (message.getString("command").equals("CONNECTION_REFUSED")) {
             ArrayList<Document> receivedPeers = (ArrayList<Document>) message.get("peers");
             peerFinding.add(receivedPeers);
-            
+
             /*
              for (Document Peer:receivedPeers) {
              System.out.println((String) Peer.getString("host"));
@@ -103,17 +103,14 @@ public class pleaseworkClient implements Runnable {
              }
              System.out.println(receivedPeers);
              */
-
             foundPeer = false;
         } else if (message.getString("command").equals("FILE_CREATE_REQUEST")) {
             String responseMessage = actOnMessages.fileCreateResponse(message);
             myclient.write(responseMessage);
             jsonunMarshaller producedmessage = new jsonunMarshaller(Document.parse(responseMessage));
-            
-            System.out.println(producedmessage.getMessage());
             //what do we do if unsafepathname
-            if (!(producedmessage.getMessage()).equals("pathname already exists")&&
-                    !(producedmessage.getMessage()).equals("unsafe pathname given")) {
+            if (!(producedmessage.getMessage()).equals("pathname already exists")
+                    && !(producedmessage.getMessage()).equals("unsafe pathname given")) {
                 String bytesRequest = actOnMessages.fileBytesRequest("FILE_CREATE_REQUEST", message);
                 myclient.write(bytesRequest);
             }
@@ -145,15 +142,18 @@ public class pleaseworkClient implements Runnable {
             String responseMessage = actOnMessages.directoryDeleteRequestResponse(message);
             myclient.write(responseMessage);
         } else if (message.getString("command").equals("FILE_MODIFY_REQUEST")) {
-            String responseMessage = actOnMessages.fileModifyRequestResponse(message);
+            String responseMessage = actOnMessages.fileModifyRequestResponse(message);   
             myclient.write(responseMessage);
-            String bytesRequest = actOnMessages.fileBytesRequest("FILE_MODIFY_REQUEST", message);
-            myclient.write(bytesRequest);
+            jsonunMarshaller producedmessage = new jsonunMarshaller(Document.parse(responseMessage));
+            if (!(producedmessage.getMessage()).equals("fileExistWithSameContent")
+                    && !(producedmessage.getMessage()).equals("unsafe pathname given") 
+                    && !(producedmessage.getMessage()).equals("pathname does not exist")) {
+                String bytesRequest = actOnMessages.fileBytesRequest("FILE_MODIFY_REQUEST", message);
+                myclient.write(bytesRequest);
+            }
         }
         return "";
     }
-    
-    
 
     @Override
     public void run() {
