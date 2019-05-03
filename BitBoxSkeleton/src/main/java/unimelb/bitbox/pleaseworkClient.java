@@ -144,6 +144,11 @@ public class pleaseworkClient implements Runnable {
         } else if (message.getString("command").equals("DIRECTORY_DELETE_REQUEST")) {
             String responseMessage = actOnMessages.directoryDeleteRequestResponse(message);
             myclient.write(responseMessage);
+        } else if (message.getString("command").equals("FILE_MODIFY_REQUEST")) {
+            String responseMessage = actOnMessages.fileModifyRequestResponse(message);
+            myclient.write(responseMessage);
+            String bytesRequest = actOnMessages.fileBytesRequest("FILE_MODIFY_REQUEST", message);
+            myclient.write(bytesRequest);
         }
         return "";
     }
