@@ -50,6 +50,7 @@ public class pleaseworkClient implements Runnable {
                 }
                 if (received == null) {
                     System.out.println("PEER CONNECTION WAS CLOSED");
+                    break;
                 }
             }
         } catch (Exception e) {
@@ -148,7 +149,7 @@ public class pleaseworkClient implements Runnable {
             myclient.write(responseMessage);
             jsonunMarshaller producedmessage = new jsonunMarshaller(Document.parse(responseMessage));
             if (!(producedmessage.getMessage()).equals("fileExistWithSameContent")
-                    && !(producedmessage.getMessage()).equals("unsafe pathname given") 
+                    && !(producedmessage.getMessage()).equals("unsafe pathname given")
                     && !(producedmessage.getMessage()).equals("pathname does not exist")) {
                 String bytesRequest = actOnMessages.fileBytesRequest("FILE_MODIFY_REQUEST", message);
                 myclient.write(bytesRequest);
