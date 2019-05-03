@@ -10,12 +10,14 @@ public class jsonMarshaller {
     public enum Messages {
         ready("file loader ready"),
         fileDeleted("file deleted"),
+        fileExistWithSameContent("file already exists with matching content"),
         directoryCreated("directory created"),
         directoryDeleted("directory deleted"),
         unsafePathname("unsafe pathname given"),
         problemCreatingFile("there was a problem creating the file"),
         problemCreatingDirectory("there was a problem creating the directory"),
         problemDeletingFile("there was a problem deleting the file"),
+        problemModifyingFile("there was a problem modifying the file"),
         problemDeletingDirectory("there was a problem deleting the directory"),
         pathnameExists("pathname already exists"),
         pathnameNotExists("pathname does not exist"),
@@ -202,5 +204,6 @@ public class jsonMarshaller {
 
         return DIRECTORY_DELETE_RESPONSE.toJson();
     }
+
 
 }
