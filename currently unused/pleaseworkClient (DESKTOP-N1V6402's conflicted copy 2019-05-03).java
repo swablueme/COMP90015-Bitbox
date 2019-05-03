@@ -33,25 +33,23 @@ public class pleaseworkClient implements Runnable {
 
     public void clientMain() {
         try {
-            while (true) {
-                if (this.in.ready()) {
-                    String received = this.in.readLine();
-                    if (received != null) {
-                        //displays message received
-                        System.out.println("READING: ");
-                        prettyPrinter.print(received);
-                        Document message = Document.parse(received);
-                        new Thread(readMessages(message)).start();
-                        //if we were rejected or we don't like the peer :(
-                        if (foundPeer == false) {
-                            System.out.println("Found peer was not found, exiting from socket");
-                            myclient.close();
-                            return;
-                        }
+            while (this.in.ready()) {
+                String received = this.in.readLine();
+                if (received != null) {
+                    //displays message received
+                    System.out.println("READING: ");
+                    prettyPrinter.print(received);
+                    Document message = Document.parse(received);
+                    new Thread(readMessages(message)).start();
+                    //if we were rejected or we don't like the peer :(
+                    if (foundPeer == false) {
+                        System.out.println("Found peer was not found, exiting from socket");
+                        myclient.close();
+                        return;
                     }
-                    if (received == null) {
-                        System.out.println("PEER CONNECTION WAS CLOSED");
-                    }
+                }
+                if (received == null) {
+                    System.out.println("PEER CONNECTION WAS CLOSED");
                 }
             }
         } catch (Exception e) {
@@ -99,7 +97,7 @@ public class pleaseworkClient implements Runnable {
         } else if (message.getString("command").equals("CONNECTION_REFUSED")) {
             ArrayList<Document> receivedPeers = (ArrayList<Document>) message.get("peers");
             peerFinding.add(receivedPeers);
-
+            
             /*
              for (Document Peer:receivedPeers) {
              System.out.println((String) Peer.getString("host"));
@@ -107,16 +105,17 @@ public class pleaseworkClient implements Runnable {
              }
              System.out.println(receivedPeers);
              */
+
             foundPeer = false;
         } else if (message.getString("command").equals("FILE_CREATE_REQUEST")) {
             String responseMessage = actOnMessages.fileCreateResponse(message);
             myclient.write(responseMessage);
             jsonunMarshaller producedmessage = new jsonunMarshaller(Document.parse(responseMessage));
-            //what do we do if unsafepathname
+            
             System.out.println(producedmessage.getMessage());
-            if (!(producedmessage.getMessage()).equals("pathname already exists")
-                    && !(producedmessage.getMessage()).equals("unsafe pathname given") 
-                    && !(producedmessage.getMessage()).equals("file created")) {
+            //what do we do if unsafepathname
+            if (!(producedmessage.getMessage()).equals("pathname already exists")&&
+                    !(producedmessage.getMessage()).equals("unsafe pathname given")) {
                 String bytesRequest = actOnMessages.fileBytesRequest("FILE_CREATE_REQUEST", message);
                 myclient.write(bytesRequest);
             }
@@ -147,19 +146,11 @@ public class pleaseworkClient implements Runnable {
         } else if (message.getString("command").equals("DIRECTORY_DELETE_REQUEST")) {
             String responseMessage = actOnMessages.directoryDeleteRequestResponse(message);
             myclient.write(responseMessage);
-        } else if (message.getString("command").equals("FILE_MODIFY_REQUEST")) {
-            String responseMessage = actOnMessages.fileModifyRequestResponse(message);
-            myclient.write(responseMessage);
-            jsonunMarshaller producedmessage = new jsonunMarshaller(Document.parse(responseMessage));
-            if (!(producedmessage.getMessage()).equals("file already exists with matching content")
-                    && !(producedmessage.getMessage()).equals("unsafe pathname given")
-                    && !(producedmessage.getMessage()).equals("pathname already exists")) {
-                String bytesRequest = actOnMessages.fileBytesRequest("FILE_MODIFY_REQUEST", message);
-                myclient.write(bytesRequest);
-            }
         }
         return "";
     }
+    
+    
 
     @Override
     public void run() {
