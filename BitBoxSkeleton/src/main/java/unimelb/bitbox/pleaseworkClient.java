@@ -22,11 +22,15 @@ public class pleaseworkClient implements Runnable {
         this.myport = myport;
         this.myhost = myhost;
         this.peerQueue = new peerQueue();
+
+
         //if the client was not created via client accepts from the server 
         //and instead from configuration then it is the first one to try sending
         //requests
         if (myclient.type != "client from server") {
             myclient.write(jsonMarshaller.createHANDSHAKE(this.myhost, this.myport, "HANDSHAKE_REQUEST"));
+            System.out.println("current queue is: " + this.peerQueue.toString());
+            System.out.println("Connecting to: " + myclient.toHostport());
         }
     }
 
@@ -36,12 +40,16 @@ public class pleaseworkClient implements Runnable {
         this.myport = myport;
         this.myhost = myhost;
         this.peerQueue = myQueue;
+
+
         //if the client was not created via client accepts from the server
         //and instead from configuration then it is the first one to try sending
         //requests
         if ((myclient.type != "client from server")
                 && (peerList.isKnownPeer(myclient) != true)) {
             myclient.write(jsonMarshaller.createHANDSHAKE(this.myhost, this.myport, "HANDSHAKE_REQUEST"));
+            System.out.println("current queue is: " + this.peerQueue.toString());
+            System.out.println("Connecting to: " + myclient.toHostport());
         }
     }
 
@@ -120,10 +128,15 @@ public class pleaseworkClient implements Runnable {
             while(!this.peerQueue.isEmpty()) {
                 try {
                     HostPort hostPort = this.peerQueue.pop();
-                    clientSocket nextClient = new clientSocket(hostPort.host, hostPort.port);
-                    pleaseworkClient myClientinstance = new pleaseworkClient(nextClient, this.myhost, this.myport, this.peerQueue);
-                    new Thread(myClientinstance).start();
-                    break;
+                    if (!(visited.getList()).contains(hostPort)){
+                        clientSocket nextClient = new clientSocket(hostPort.host, hostPort.port);
+                        visited.addElement(hostPort);
+                        System.out.println("visited list: "+visited.getList());
+                        pleaseworkClient myClientinstance = new pleaseworkClient(nextClient, this.myhost, this.myport, this.peerQueue);
+                        new Thread(myClientinstance).start();
+                        break;
+                    }
+
                 }catch (Exception e) {
                     exceptionHandler.handleException(e);
                     continue;
@@ -197,32 +210,5 @@ public class pleaseworkClient implements Runnable {
         clientMain();
     }
 
-    public static class peerQueue {
 
-        private Queue<HostPort> queue;
-        private ArrayList<HostPort> visited;
-
-        peerQueue(){
-            this.queue = new LinkedList<>();
-            this.visited = new ArrayList<>();
-        }
-        public void add(HostPort hostPort){
-            if(!this.visited.contains(hostPort)) {
-                this.queue.offer(hostPort);
-                this.visited.add(hostPort);
-            }
-        }
-        public void add(ArrayList<Document> peerList){
-            for(Document peer:peerList) this.add(new HostPort(peer));
-        }
-        public void visit(HostPort hostPort){
-            this.visited.add(hostPort);
-        }
-        public HostPort pop(){
-            return this.queue.poll();
-        }
-        public boolean isEmpty(){
-            return this.queue.isEmpty();
-        }
-    }
 }

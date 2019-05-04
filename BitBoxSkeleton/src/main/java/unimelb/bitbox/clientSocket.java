@@ -1,6 +1,7 @@
 package unimelb.bitbox;
 
 import java.net.Socket;
+import java.net.InetSocketAddress;
 import java.util.logging.Logger;
 import unimelb.bitbox.util.Document;
 import java.io.BufferedReader;
@@ -17,6 +18,7 @@ public class clientSocket extends baseSocket {
     //values from CONNECTION_REQUEST
     private Integer connRequestServerPort = null;
     private String connRequestHost = null;
+
 
     //create new client from configuration file
     clientSocket(String host, Integer port) {
@@ -72,6 +74,11 @@ public class clientSocket extends baseSocket {
                 + "remote port: " + this.connRequestServerPort + "\n"
                 + "remote hostname: " + this.connRequestHost;
         return details;
+    }
+
+    public String toHostport() {
+
+        return (clientSock.getRemoteSocketAddress().toString().split("/")[0]+ ":" + clientSock.getPort());
     }
 
     //gets the port that the client initially either sent or received in 
