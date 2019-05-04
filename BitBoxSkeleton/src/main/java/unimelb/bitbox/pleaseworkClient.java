@@ -51,6 +51,8 @@ public class pleaseworkClient implements Runnable {
                     }
                     if (received == null) {
                         System.out.println("PEER CONNECTION WAS CLOSED");
+                        myclient.close();
+                        return;
                     }
                 }
             }
@@ -113,10 +115,7 @@ public class pleaseworkClient implements Runnable {
             myclient.write(responseMessage);
             jsonunMarshaller producedmessage = new jsonunMarshaller(Document.parse(responseMessage));
             //what do we do if unsafepathname
-            System.out.println(producedmessage.getMessage());
-            if (!(producedmessage.getMessage()).equals("pathname already exists")
-                    && !(producedmessage.getMessage()).equals("unsafe pathname given") 
-                    && !(producedmessage.getMessage()).equals("file created")) {
+            if ((producedmessage.getMessage()).equals("file loader ready")) {
                 String bytesRequest = actOnMessages.fileBytesRequest("FILE_CREATE_REQUEST", message);
                 myclient.write(bytesRequest);
             }
@@ -130,7 +129,6 @@ public class pleaseworkClient implements Runnable {
              }
              */
         } else if (message.getString("command").equals("FILE_BYTES_REQUEST")) {
-            System.out.println("got a request");
             String responseMessage = actOnMessages.fileBytesRequestResponse(message);
             myclient.write(responseMessage);
         } else if (message.getString("command").equals("FILE_BYTES_RESPONSE")) {
@@ -151,9 +149,7 @@ public class pleaseworkClient implements Runnable {
             String responseMessage = actOnMessages.fileModifyRequestResponse(message);
             myclient.write(responseMessage);
             jsonunMarshaller producedmessage = new jsonunMarshaller(Document.parse(responseMessage));
-            if (!(producedmessage.getMessage()).equals("file already exists with matching content")
-                    && !(producedmessage.getMessage()).equals("unsafe pathname given")
-                    && !(producedmessage.getMessage()).equals("pathname already exists")) {
+            if ((producedmessage.getMessage()).equals("file loader ready")) { 
                 String bytesRequest = actOnMessages.fileBytesRequest("FILE_MODIFY_REQUEST", message);
                 myclient.write(bytesRequest);
             }
