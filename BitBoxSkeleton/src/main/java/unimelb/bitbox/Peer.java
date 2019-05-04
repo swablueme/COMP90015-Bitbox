@@ -59,6 +59,7 @@ public class Peer {
         // ==============================
         System.out.println("THESE ARE THE CURRENT PROPERTIES OF THE SERVER: "+ Configuration.getConfiguration());
         new Thread(new pleaseworkServer(host, Integer.parseInt(port))).start();
+        new Thread(new generatePeriodicSyncEvents()).start();
         
         /* infinite loop that checks if we have found a peer
         while(true) {
