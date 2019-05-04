@@ -16,7 +16,7 @@ public class actOnMessages implements Runnable {
 
     //a response to a file create
     public static String fileCreateResponse(Document message) {
-        //creates a jsonunmarshaller object which has convenient methods for getting information out of a Document
+        //creates a jsonunmarshaller object which has convenient methods for getting information out of a Document 
         //(structure that contains json data)
         jsonunMarshaller unmarshalledmessage = new jsonunMarshaller(message);
         String pathname = unmarshalledmessage.getpathName();
@@ -25,24 +25,19 @@ public class actOnMessages implements Runnable {
         Long filesize = unmarshalledmessage.getFileSize();
         //initialise messages variable
         jsonMarshaller.Messages status = null;
-        boolean isCreated;
         //checks if path is safe (it's not being used by anything else) and if filename exists
         if (((fileSystemManager.isSafePathName(pathname)) == true)
                 && (fileSystemManager.fileNameExists(pathname) == false)) {
-            //we make a fileloader to hold what we are going to write in
+            //we make a fileloader to hold what we are going to write in     
             try {
                 //creates a file loader which the file goes into
-                isCreated=fileSystemManager.createFileLoader(pathname, md5, filesize, lastmodified);
+                fileSystemManager.createFileLoader(pathname, md5, filesize, lastmodified);
                 Boolean checkedShortcut = fileSystemManager.checkShortcut(pathname);
                 if (checkedShortcut) {
                     status = jsonMarshaller.Messages.fileCreated;
-                } else if (isCreated){
-                    status = jsonMarshaller.Messages.ready;
-                } else {
-                    status = jsonMarshaller.Messages.problemCreatingFile;
                 }
                 //this is the message field for the json
-
+                status = jsonMarshaller.Messages.ready;
             } catch (Exception e) {
                 exceptionHandler.handleException(e);
                 status = jsonMarshaller.Messages.problemCreatingFile;
@@ -64,8 +59,7 @@ public class actOnMessages implements Runnable {
         Long length = null;
         Long position = null;
         Long blocksize = Long.parseLong(Configuration.getConfiguration().get("blockSize"));
-        if (!type.equals("FILE_CREATE_REQUEST")
-                && (!type.equals("FILE_MODIFY_REQUEST"))) {
+        if (!type.equals("FILE_CREATE_REQUEST")) {
             position = unmarshalledmessage.getPosition();
             length = unmarshalledmessage.getLength();
             position = position + length;
@@ -143,8 +137,7 @@ public class actOnMessages implements Runnable {
         Long lastmodified = unmarshalledmessage.getlastmodified();
         jsonMarshaller.Messages statusmessage = null;
         //checks if a file exists and tries to delete it
-        boolean isExist = fileSystemManager.fileNameExists(pathname);
-        if (isExist == true) {
+        if (fileSystemManager.fileNameExists(pathname) == true) {
             try {
                 Boolean status = fileSystemManager.deleteFile(pathname, lastmodified, md5);
                 if (status == true) {
@@ -159,7 +152,6 @@ public class actOnMessages implements Runnable {
                 statusmessage = jsonMarshaller.Messages.problemDeletingFile;
             }
         } else {
-            statusmessage = jsonMarshaller.Messages.pathnameNotExists;
         }
         return jsonMarshaller.createFILE_DELETE_RESPONSE(unmarshalledmessage.getFileDescriptorDocument(), pathname, statusmessage);
     }
@@ -186,8 +178,6 @@ public class actOnMessages implements Runnable {
                 responseMessage = jsonMarshaller.Messages.unsafePathname;
             } else if (fileSystemManager.dirNameExists(pathname) == true) {
                 responseMessage = jsonMarshaller.Messages.pathnameExists;
-            } else {
-                responseMessage = jsonMarshaller.Messages.problemCreatingDirectory;
             }
         }
         //makes a json with the required information
@@ -221,8 +211,6 @@ public class actOnMessages implements Runnable {
                 responseMessage = jsonMarshaller.Messages.unsafePathname;
             } else if (fileSystemManager.dirNameExists(pathname) == false) {
                 responseMessage = jsonMarshaller.Messages.pathnameNotExists;
-            } else {
-                responseMessage = jsonMarshaller.Messages.problemDeletingDirectory;
             }
         }
         return jsonMarshaller.createDIRECTORY_DELETE_RESPONSE(pathname, responseMessage);
@@ -241,52 +229,6 @@ public class actOnMessages implements Runnable {
                 }
             }
         }
-    }
-
-    public static String fileModifyRequestResponse(Document message) {
-        System.out.println("Trying to call modify requests");
-        jsonunMarshaller unmarshalledmessage = new jsonunMarshaller(message);
-        String pathname = unmarshalledmessage.getpathName();
-        String md5 = unmarshalledmessage.getmd5();
-        Long lastmodified = unmarshalledmessage.getlastmodified();
-        jsonMarshaller.Messages responseMessage = null;
-        boolean isCreated;
-        if ((fileSystemManager.fileNameExists(pathname, md5) == false)
-                && (fileSystemManager.isSafePathName(pathname) == true)
-                && (fileSystemManager.fileNameExists(pathname) == true)) {
-            System.out.println("attempting to see if it's a valid path name");
-            //we make a fileloader to hold what we are going to write in
-            try {
-                System.out.println("Atttempting to cancel file loaders");
-                fileSystemManager.cancelFileLoader(pathname);
-                //creates a file loader which the file goes into
-                isCreated = fileSystemManager.modifyFileLoader(pathname, md5, lastmodified);
-                System.out.println("try creating file loader");
-                //this is the message field for the json
-                if (isCreated) {
-                    responseMessage = jsonMarshaller.Messages.ready;
-                } else {
-                    responseMessage = jsonMarshaller.Messages.problemModifyingFile;
-                }
-            } catch (Exception e) {
-                System.out.println("an exception occurreds");
-                exceptionHandler.handleException(e);
-                responseMessage = jsonMarshaller.Messages.problemModifyingFile;
-            }
-        } else {
-            if (fileSystemManager.isSafePathName(pathname) == false) {
-                responseMessage = jsonMarshaller.Messages.unsafePathname;
-            } else if (fileSystemManager.fileNameExists(pathname, md5) == true) {
-                responseMessage = jsonMarshaller.Messages.fileExistWithSameContent;
-            } else if (fileSystemManager.fileNameExists(pathname) == false) {
-                responseMessage = jsonMarshaller.Messages.pathnameNotExists;
-            } else {
-                responseMessage = jsonMarshaller.Messages.problemModifyingFile;
-            }
-        }
-        System.out.println("attempting to make string");
-        return jsonMarshaller.createFILE_MODIFY_RESPONSE(unmarshalledmessage.getFileDescriptorDocument(), pathname,
-                responseMessage);
     }
 
     @Override

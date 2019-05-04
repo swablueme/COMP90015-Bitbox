@@ -24,6 +24,7 @@ public class clientSocket extends baseSocket {
         try {
             clientSock = new Socket(host, port);
             clientSock.setSoTimeout(2000);
+            clientSock.setSendBufferSize(3000000);
             super.bufferedStreams = super.createBufferedStreams(this.clientSock);
         } catch (Exception e) {
             exceptionHandler.handleException(e);
@@ -45,7 +46,12 @@ public class clientSocket extends baseSocket {
     public synchronized void write(String message) {
         BufferedWriter out = (BufferedWriter) super.getBufferedOutputStream();
         try {
-            out.write(message + "\n");
+            
+            //message.substring(0, 20);
+            System.out.println(message.length());
+            out.write(message);
+
+            out.write("\n");
             out.flush();
             System.out.println("wrote");
             prettyPrinter.print(message);
