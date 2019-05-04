@@ -1,6 +1,7 @@
 package unimelb.bitbox;
 
 import java.net.Socket;
+import java.net.InetSocketAddress;
 import java.util.logging.Logger;
 import unimelb.bitbox.util.Document;
 import java.io.BufferedReader;
@@ -18,12 +19,14 @@ public class clientSocket extends baseSocket {
     private Integer connRequestServerPort = null;
     private String connRequestHost = null;
 
+
     //create new client from configuration file
     clientSocket(String host, Integer port) {
         super("client from config");
         try {
             clientSock = new Socket(host, port);
             clientSock.setSoTimeout(2000);
+            clientSock.setSendBufferSize(3000000);
             super.bufferedStreams = super.createBufferedStreams(this.clientSock);
         } catch (Exception e) {
             exceptionHandler.handleException(e);
@@ -45,7 +48,12 @@ public class clientSocket extends baseSocket {
     public synchronized void write(String message) {
         BufferedWriter out = (BufferedWriter) super.getBufferedOutputStream();
         try {
-            out.write(message + "\n");
+            
+            //message.substring(0, 20);
+            System.out.println(message.length());
+            out.write(message);
+
+            out.write("\n");
             out.flush();
             System.out.println("wrote");
             prettyPrinter.print(message);
@@ -72,6 +80,11 @@ public class clientSocket extends baseSocket {
                 + "remote port: " + this.connRequestServerPort + "\n"
                 + "remote hostname: " + this.connRequestHost;
         return details;
+    }
+
+    public String toHostport() {
+
+        return (clientSock.getRemoteSocketAddress().toString().split("/")[0]+ ":" + clientSock.getPort());
     }
 
     //gets the port that the client initially either sent or received in 

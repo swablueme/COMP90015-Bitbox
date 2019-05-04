@@ -22,49 +22,44 @@ public class Peer {
 
         //loads up your file manager on the regular instance
         ServerMain instance = new ServerMain();
-        //load configuration data from the configuration file
+        //load configs from the configuration file
         String port = Configuration.getConfiguration().get("port");
         String host =  Configuration.getConfiguration().get("advertisedName");
         String peers = Configuration.getConfiguration().get("peers");
 
         ArrayList<pleaseworkClient> attemptedtoconnectclients= new ArrayList<>();
-
-        //split all the peers which are separated by commas from the config file
+        //split all the peers which are seperated by commas from the config file
         String[] mypeers = peers.split(",");
+
         //add them to the queue
         for (String peer:mypeers){
-            peerFinding.add(new HostPort(peer));
-        }
-
-//        ====================================================================================================
-//        Find server of other peers in the network.
-//        If they exist, establish connection with them.
-//        ====================================================================================================
-        while((!peerFinding.isEmpty())&&(!peerList.isFull())){
+            HostPort hostPort = new HostPort(peer);
             clientSocket myClient = null;
-                try {
-                    //for each client attempt to create a socket and thread
-                    //if this fails it's because the client is offline
-                    HostPort hostPort = peerFinding.pop();
+
+            try {
+                //for each client attempt to create a socket and thread
+                //if this fails it's because the client is offline
+                if (!(visited.getList()).contains(hostPort)) {
                     myClient = new clientSocket(hostPort.host, hostPort.port);
                     pleaseworkClient myClientinstance = new pleaseworkClient(myClient, host, Integer.parseInt(port));
+                    visited.addElement(hostPort);
+                    System.out.println("visited list: "+visited.getList());
                     attemptedtoconnectclients.add(myClientinstance);
                     new Thread(myClientinstance).start();
-                    //wait some time for the CONNECTION_REFUSED to be added to the peerFinding list
-                    Thread.sleep(1000);
-                } catch (Exception e) {
-                    exceptionHandler.handleException(e);
-                    continue;
                 }
-
+                //wait some time for the CONNECTION_REFUSED to be added to the peerFinding list
+            } catch (Exception e) {
+                exceptionHandler.handleException(e);
+                continue;
+            }
         }
 
-//        ====================================================================================================
-//        Create a server in a thread
-//        ====================================================================================================
-        //makes a server thread
+        // ==============================
+        // Create a server thread
+        // ==============================
         System.out.println("THESE ARE THE CURRENT PROPERTIES OF THE SERVER: "+ Configuration.getConfiguration());
         new Thread(new pleaseworkServer(host, Integer.parseInt(port))).start();
+        new Thread(new generatePeriodicSyncEvents()).start();
         
         /* infinite loop that checks if we have found a peer
         while(true) {

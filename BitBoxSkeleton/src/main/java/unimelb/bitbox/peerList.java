@@ -11,6 +11,7 @@ import java.util.logging.Logger;
 public class peerList {
     //where we store peers
     private static ArrayList<clientSocket> knownPeers = new ArrayList<>();
+    private static ArrayList<clientSocket> outgoing = new ArrayList<>();
     private static final Map<String, String> config = Configuration.getConfiguration();
     private static Logger log = Logger.getLogger(Peer.class.getName());
 
@@ -27,8 +28,11 @@ public class peerList {
 
     //adds peers to the peerlist if it's not fulll
     public static synchronized Boolean addKnownPeers(clientSocket peer) {
-        if (knownPeers.size() + 1 <= Integer.parseInt(config.get("maximumIncommingConnections"))) {
+        if ((knownPeers.size() - outgoing.size() + 1) <= Integer.parseInt(config.get("maximumIncommingConnections"))) {
             knownPeers.add(peer);
+            if(peer.type != "client from server"){
+                outgoing.add(peer);
+            }
             log.info("Added peer to peerlist");
             return true;
         }
@@ -57,7 +61,7 @@ public class peerList {
 
     }
     public static boolean isFull(){
-        return(knownPeers.size()== Integer.parseInt(config.get("maximumIncommingConnections")));
+        return((knownPeers.size() - outgoing.size())== Integer.parseInt(config.get("maximumIncommingConnections")));
     }
 
 }
