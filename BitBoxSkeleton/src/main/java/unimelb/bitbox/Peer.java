@@ -39,16 +39,19 @@ public class Peer {
             try {
                 //for each client attempt to create a socket and thread
                 //if this fails it's because the client is offline
-                if (!(visited.getList()).contains(hostPort)) {
+                if (!(visited.getList()).contains(hostPort))
+                {
                     myClient = new clientSocket(hostPort.host, hostPort.port);
                     pleaseworkClient myClientinstance = new pleaseworkClient(myClient, host, Integer.parseInt(port));
                     visited.addElement(hostPort);
-                    System.out.println("visited list: "+visited.getList());
+                    System.out.println("visited list: " + visited.getList());
                     attemptedtoconnectclients.add(myClientinstance);
                     new Thread(myClientinstance).start();
                 }
                 //wait some time for the CONNECTION_REFUSED to be added to the peerFinding list
-            } catch (Exception e) {
+            }
+            catch (Exception e)
+            {
                 exceptionHandler.handleException(e);
                 continue;
             }

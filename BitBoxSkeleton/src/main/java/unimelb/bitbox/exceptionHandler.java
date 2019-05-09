@@ -7,15 +7,19 @@ import java.security.NoSuchAlgorithmException;
 import java.net.ConnectException;
 import java.util.logging.Logger;
 
-public class exceptionHandler {
-
+public class exceptionHandler
+{
     private static Logger log = Logger.getLogger(Peer.class.getName());
 
-    public static void handleException(Exception e) {
-        if (e instanceof ConnectException) {
+    public static void handleException(Exception e)
+    {
+        if (e instanceof ConnectException)
+        {
             log.info("connection exception reached");
-        } else if ((e instanceof UnknownHostException) || (e instanceof IOException)
-                || (e instanceof UnsupportedEncodingException) || (e instanceof NoSuchAlgorithmException)) {
+        }
+        else if ((e instanceof UnknownHostException) || (e instanceof IOException)
+                || (e instanceof UnsupportedEncodingException) || (e instanceof NoSuchAlgorithmException))
+        {
             e.printStackTrace();
         }
         return;

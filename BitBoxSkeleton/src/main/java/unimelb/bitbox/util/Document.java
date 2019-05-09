@@ -43,10 +43,14 @@ public class Document {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public void append(String key,String val){
-		if(val==null){
+	public void append(String key,String val)
+	{
+		if(val==null)
+		{
 			obj.put(key, null);
-		} else {
+		}
+		else
+		{
 			obj.put(key, new String(val));
 		}
 	}

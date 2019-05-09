@@ -7,8 +7,8 @@ import unimelb.bitbox.util.Document;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 
-public class clientSocket extends baseSocket {
-
+public class clientSocket extends baseSocket
+{
     private static Logger log = Logger.getLogger(Peer.class.getName());
     
     //numbers of clients connected
@@ -21,14 +21,17 @@ public class clientSocket extends baseSocket {
 
 
     //create new client from configuration file
-    clientSocket(String host, Integer port) {
+    clientSocket(String host, Integer port)
+    {
         super("client from config");
         try {
             clientSock = new Socket(host, port);
             clientSock.setSoTimeout(2000);
             clientSock.setSendBufferSize(3000000);
             super.bufferedStreams = super.createBufferedStreams(this.clientSock);
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             exceptionHandler.handleException(e);
         }
         
@@ -36,7 +39,8 @@ public class clientSocket extends baseSocket {
     }
 
     //create a new client from the accept
-    clientSocket(Socket clientSocket) {
+    clientSocket(Socket clientSocket)
+    {
         super("client from server");
         this.clientCount += 1;
         this.clientSock = clientSocket;
@@ -45,10 +49,10 @@ public class clientSocket extends baseSocket {
     }
 
     //this method writes a message to our socket
-    public synchronized void write(String message) {
+    public synchronized void write(String message)
+    {
         BufferedWriter out = (BufferedWriter) super.getBufferedOutputStream();
         try {
-            
             //message.substring(0, 20);
             System.out.println(message.length());
             out.write(message);
@@ -57,60 +61,70 @@ public class clientSocket extends baseSocket {
             out.flush();
             System.out.println("wrote");
             prettyPrinter.print(message);
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             System.out.println("failed to write message");
             prettyPrinter.print(message);
             exceptionHandler.handleException(e);
         }
     }
 
-    public void setCONNECTION_REQUESTdetails(Document handshakeDetails) {
-        if (super.type.equals("client from config")) {
+    public void setCONNECTION_REQUESTdetails(Document handshakeDetails)
+    {
+        if (super.type.equals("client from config"))
+        {
             clientCount++;
         }
         Document hostport = (Document) handshakeDetails.get("hostPort");
         this.connRequestServerPort = Integer.parseInt(hostport.get("port").toString());
         this.connRequestHost = (String) ((Document) handshakeDetails.get("hostPort")).getString("host");
         //System.out.printf("set port %d, host %s \n", connRequestServerPort, connRequestHost);
-
     }
 
-    public String toString() {
+    public String toString()
+    {
         String details = "client number: " + this.clientCount + "\n"
                 + "remote port: " + this.connRequestServerPort + "\n"
                 + "remote hostname: " + this.connRequestHost;
         return details;
     }
 
-    public String toHostport() {
-
+    public String toHostport()
+    {
         return (clientSock.getRemoteSocketAddress().toString().split("/")[0]+ ":" + clientSock.getPort());
     }
 
     //gets the port that the client initially either sent or received in 
     //the handshake request or response
-    public Integer getconnRequestServerPort() {
+    public Integer getconnRequestServerPort()
+    {
         return this.connRequestServerPort;
     }
     //gets the host/name thingo that the client initially either sent or 
     //received in the handshake request or response
-    public String connRequestHost() {
+    public String connRequestHost()
+    {
         return this.connRequestHost;
     }
 
     @Override
-    public void close() {
+    public void close()
+    {
         super.socket = clientSock;
         super.close();
     }
 
     //completely untested
     @Override
-    public boolean equals(Object obj) {
-        if (obj instanceof clientSocket) {
+    public boolean equals(Object obj)
+    {
+        if (obj instanceof clientSocket)
+        {
             clientSocket other = (clientSocket) obj;
             if ((this.connRequestServerPort == other.connRequestServerPort)
-                    && (this.connRequestHost == other.connRequestHost)) {
+                    && (this.connRequestHost == other.connRequestHost))
+            {
                 return true;
             }
             return false;

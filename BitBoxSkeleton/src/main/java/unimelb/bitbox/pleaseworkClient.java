@@ -7,8 +7,8 @@ import unimelb.bitbox.util.HostPort;
 
 import java.util.*;
 
-public class pleaseworkClient implements Runnable {
-
+public class pleaseworkClient implements Runnable
+{
     clientSocket myclient = null;
     BufferedReader in = null;
     Integer myport = null;
@@ -16,7 +16,8 @@ public class pleaseworkClient implements Runnable {
     public Boolean foundPeer = null;
     peerQueue peerQueue;
 
-    pleaseworkClient(clientSocket myclient, String myhost, Integer myport) {;
+    pleaseworkClient(clientSocket myclient, String myhost, Integer myport)
+    {
         this.in = (BufferedReader) myclient.getBufferedInputStream();
         this.myclient = myclient;
         this.myport = myport;
@@ -27,14 +28,17 @@ public class pleaseworkClient implements Runnable {
         //if the client was not created via client accepts from the server 
         //and instead from configuration then it is the first one to try sending
         //requests
-        if (myclient.type != "client from server") {
+        if (myclient.type != "client from server")
+        {
+//            Write JSON string to client socket
             myclient.write(jsonMarshaller.createHANDSHAKE(this.myhost, this.myport, "HANDSHAKE_REQUEST"));
             System.out.println("current queue is: " + this.peerQueue.toString());
             System.out.println("Connecting to: " + myclient.toHostport());
         }
     }
 
-    pleaseworkClient(clientSocket myclient, String myhost, Integer myport,peerQueue myQueue) {;
+    pleaseworkClient(clientSocket myclient, String myhost, Integer myport,peerQueue myQueue)
+    {
         this.in = (BufferedReader) myclient.getBufferedInputStream();
         this.myclient = myclient;
         this.myport = myport;
@@ -45,58 +49,70 @@ public class pleaseworkClient implements Runnable {
         //if the client was not created via client accepts from the server
         //and instead from configuration then it is the first one to try sending
         //requests
-        if ((myclient.type != "client from server")
-                && (peerList.isKnownPeer(myclient) != true)) {
+        if ((myclient.type != "client from server") && (peerList.isKnownPeer(myclient) != true))
+        {
             myclient.write(jsonMarshaller.createHANDSHAKE(this.myhost, this.myport, "HANDSHAKE_REQUEST"));
             System.out.println("current queue is: " + this.peerQueue.toString());
             System.out.println("Connecting to: " + myclient.toHostport());
         }
     }
 
-    public void clientMain() {
+    public void clientMain()
+    {
         try {
-            while (true) {
-                if (this.in.ready()) {
+            while (true)
+            {
+                if (this.in.ready())
+                {
                     String received = this.in.readLine();
-                    if (received != null) {
+                    if (received != null)
+                    {
                         //displays message received
                         System.out.println("READING: ");
                         prettyPrinter.print(received);
                         Document message = Document.parse(received);
                         new Thread(readMessages(message)).start();
                         //if we were rejected or we don't like the peer :(
-                        if (foundPeer == false) {
+                        if (foundPeer == false)
+                        {
                             System.out.println("Found peer was not found, exiting from socket");
                             myclient.close();
                             return;
                         }
                     }
-                    if (received == null) {
+                    if (received == null)
+                    {
                         System.out.println("PEER CONNECTION WAS CLOSED");
                         myclient.close();
                         return;
                     }
                 }
             }
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             exceptionHandler.handleException(e);
         }
     }
 
-    public String readMessages(Document message) {
+    public String readMessages(Document message)
+    {
         //if we are the client connecting to another server
-        if (message.getString("command").equals("HANDSHAKE_RESPONSE")) {
+        if (message.getString("command").equals("HANDSHAKE_RESPONSE"))
+        {
             //saves the contents of message into variables
             myclient.setCONNECTION_REQUESTdetails(message);
-            if (peerList.isKnownPeer(myclient) != true) {
+            if (peerList.isKnownPeer(myclient) != true)
+            {
                 peerList.addKnownPeers(myclient);
                 foundPeer = true;
                 System.out.println("our peerlist is now: " + peerList.getPeers());
                 actOnMessages.generateSyncEvents();
-            }else{
+            }
+            else
+            {
                 System.out.println("Oppps!Duplicate connections!");
                 foundPeer = false;
-
             }
             //what else? do we close the socket?
             //if we are the server owo
@@ -152,7 +168,9 @@ public class pleaseworkClient implements Runnable {
              System.out.println(receivedPeers);
              */
             foundPeer = false;
-        } else if (message.getString("command").equals("FILE_CREATE_REQUEST")) {
+        }
+        else if (message.getString("command").equals("FILE_CREATE_REQUEST"))
+        {
             String responseMessage = actOnMessages.fileCreateResponse(message);
             myclient.write(responseMessage);
             jsonunMarshaller producedmessage = new jsonunMarshaller(Document.parse(responseMessage));
@@ -170,28 +188,42 @@ public class pleaseworkClient implements Runnable {
              exceptionHandler.handleException(e);
              }
              */
-        } else if (message.getString("command").equals("FILE_BYTES_REQUEST")) {
+        }
+        else if (message.getString("command").equals("FILE_BYTES_REQUEST"))
+        {
             String responseMessage = actOnMessages.fileBytesRequestResponse(message);
             myclient.write(responseMessage);
-        } else if (message.getString("command").equals("FILE_BYTES_RESPONSE")) {
+        }
+        else if (message.getString("command").equals("FILE_BYTES_RESPONSE"))
+        {
             String responseMessage = actOnMessages.processReceivedFile(message);
-            if (!responseMessage.equals("done") && !responseMessage.equals("issue")) {
+            if (!responseMessage.equals("done") && !responseMessage.equals("issue"))
+            {
                 myclient.write(responseMessage);
             }
-        } else if (message.getString("command").equals("FILE_DELETE_REQUEST")) {
+        }
+        else if (message.getString("command").equals("FILE_DELETE_REQUEST"))
+        {
             String responseMessage = actOnMessages.fileDeleteResponse(message);
             myclient.write(responseMessage);
-        } else if (message.getString("command").equals("DIRECTORY_CREATE_REQUEST")) {
+        }
+        else if (message.getString("command").equals("DIRECTORY_CREATE_REQUEST"))
+        {
             String responseMessage = actOnMessages.directoryCreateRequestResponse(message);
             myclient.write(responseMessage);
-        } else if (message.getString("command").equals("DIRECTORY_DELETE_REQUEST")) {
+        }
+        else if (message.getString("command").equals("DIRECTORY_DELETE_REQUEST"))
+        {
             String responseMessage = actOnMessages.directoryDeleteRequestResponse(message);
             myclient.write(responseMessage);
-        } else if (message.getString("command").equals("FILE_MODIFY_REQUEST")) {
+        }
+        else if (message.getString("command").equals("FILE_MODIFY_REQUEST"))
+        {
             String responseMessage = actOnMessages.fileModifyRequestResponse(message);
             myclient.write(responseMessage);
             jsonunMarshaller producedmessage = new jsonunMarshaller(Document.parse(responseMessage));
-            if ((producedmessage.getMessage()).equals("file loader ready")) { 
+            if ((producedmessage.getMessage()).equals("file loader ready"))
+            {
                 String bytesRequest = actOnMessages.fileBytesRequest("FILE_MODIFY_REQUEST", message);
                 myclient.write(bytesRequest);
             }
@@ -201,7 +233,8 @@ public class pleaseworkClient implements Runnable {
     }
 
     @Override
-    public void run() {
+    public void run()
+    {
         System.out.println("starting client");
         clientMain();
     }
