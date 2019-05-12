@@ -1,23 +1,10 @@
-package com.kaisoon;
+package unimelb.bitbox;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
 
 /**
  * @author Kai Soon
- * RSA is written to be used in conjunction with the Bitbox distributed file system written in this project. When a
- * peer is created in the system, an RSA object should be instantiated. Upon construction of the object, a set of
- * public/private key pair will be generated. The program can freely access the public key using the getPublicKey()
- * method.
- * The following example will demonstrate how two peers can use this class to encrypt
- * and decrypt transmitted messages:
- * - Should Peer1 wants to send an encrypted message to Peer2, Peer1 shall first instantiate an RSA object
- * - Peer1 shall access the public key of the RSA object and sends it to Peer2
- * - Peer2 shall use encrypt(String message, BigInteger publicKey) to encrypt the message, where the
- * argument publicKey is the publicKey of Peer1
- * - Peer2 shall send the cipherText to Peer1
- * - Peer1 shall then decrypt the cipherText using decrypt(String message)
- *
  * random is a cryptographically secure random number used in generating numbers
  * N is the modulus of the RSA encryption and its the product of two prime numbers
  * e is the public encryption key used to encrypt messages
@@ -31,19 +18,17 @@ public class RSA
     private BigInteger e = null;
     private BigInteger d = null;
     // THIS MUST BE A LARGE NUMBER FOR THE GENERATED KEYS TO WORK!!
-    // Note that for keys to be in ssh-keygen format, BITLENGTH should be at least 1024.
     private final int BITLENGTH = 1024;
 
     // ============================== Constructor
     /**
      * Instantiate an RSA object.
-     * generateKeys() is called upon the construction of an object such that all all keys are available and ready for
-     * use in encryptiona nd decryption.
+     * No keys are generated until the the generateKeys() method it called.
+     * Getters for keys will return null if no keys have been generated in the object.
      */
     public RSA()
     {
         this.random = new SecureRandom();
-        this.generateKeys();
     }
 
     // ============================== Getters
@@ -57,6 +42,17 @@ public class RSA
         publicKey[1] = N;
 
         return publicKey;
+    }
+    /**
+     * @return An array of two BigIntegers which is private key pair generated.
+     */
+    public BigInteger[] getPrivateKey()
+    {
+        BigInteger[] privateKey = new BigInteger[2];
+        privateKey[0] = d;
+        privateKey[1] = N;
+
+        return privateKey;
     }
 
     // ============================== Methods
@@ -120,6 +116,35 @@ public class RSA
     }
 
     /**
+     * encrypt() converts a string into a cipher-text in the form of a BigInteger with the generated public key and
+     * modulus
+     * @param message is the string message to be encrypted
+     * @return A BitInteger cipherText if keys are generated and encryption is successful
+     * @return null if keys are not generated and encryption cannot be performed
+     */
+    public BigInteger encrypt(String message)
+    {
+        if ((N == null) || (e == null) || (d == null))
+        {
+            System.out.println("Error: Keys have not been generated");
+            return null;
+        }
+        else
+        {
+            // Convert message into its corresponding byte array
+            byte[] messageBytes = message.getBytes();
+            // The concatenated array of bytes represents a BigInteger. Convert the array of bytes into a BigInteger.
+            BigInteger messageInt = new BigInteger(messageBytes);
+            // Create cipherText where c = (m^e) mod N
+            BigInteger cipherText = messageInt.modPow(e, N);
+
+            // ========== FOR DEBUGGING
+//            System.out.println("Encrypted message: " + new String(cipherText.toByteArray()) + "\n");
+
+            return cipherText;
+        }
+    }
+    /**
      * encrypt() converts a string into a cipherText in the form of a BigInteger with a provided public key
      * @param message is the string message to be encrypted
      * @param publicKey is a array consisting of [publicKey, modulus]
@@ -127,17 +152,17 @@ public class RSA
      */
     public BigInteger encrypt(String message, BigInteger[] publicKey)
     {
-        // Convert message into its corresponding byte array
-        byte[] messageBytes = message.getBytes();
-        // The concatenated array of bytes represents a BigInteger. Convert the array of bytes into a BigInteger.
-        BigInteger messageInt = new BigInteger(messageBytes);
-        // Create cipherText where c = (m^e) mod N
-        BigInteger cipherText = messageInt.modPow(publicKey[0], publicKey[1]);
+            // Convert message into its corresponding byte array
+            byte[] messageBytes = message.getBytes();
+            // The concatenated array of bytes represents a BigInteger. Convert the array of bytes into a BigInteger.
+            BigInteger messageInt = new BigInteger(messageBytes);
+            // Create cipherText where c = (m^e) mod N
+            BigInteger cipherText = messageInt.modPow(publicKey[0], publicKey[1]);
 
-        // ========== FOR DEBUGGING
+            // ========== FOR DEBUGGING
 //            System.out.println("Encrypted message: " + new String(cipherText.toByteArray()) + "\n");
 
-        return cipherText;
+            return cipherText;
     }
 
     /**
@@ -167,6 +192,26 @@ public class RSA
 
             return message;
         }
+    }
+    /**
+     * decrypt() converts a string into a cipherText in the form of a BigInteger with a provided public key
+     * @param cipherText is a BigInteger cipherText
+     * @param privateKey is a array consisting of [privateKey, modulus]
+     * @return The original string message
+     */
+    public String decrypt(BigInteger cipherText, BigInteger[] privateKey)
+    {
+        // Convert cipherText back to original message's BigInteger representation
+        BigInteger messageInt = cipherText.modPow(privateKey[0], privateKey[1]);
+        // Tokenize BigInteger into a byte array with each byte representing a character in the original message
+        byte[] messageBytes = messageInt.toByteArray();
+        // Convert byte array into original string message
+        String message = new String(messageBytes);
+
+        // ========== FOR DEBUGGING
+//        System.out.println("Decrypted message: " + message + "\n");
+
+        return message;
     }
 
 }
