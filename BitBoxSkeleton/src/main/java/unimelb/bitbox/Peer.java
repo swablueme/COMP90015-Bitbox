@@ -19,7 +19,7 @@ public class Peer {
     private static Logger log = Logger.getLogger(Peer.class.getName());
 
     public static void main(String[] args) throws IOException, NumberFormatException, NoSuchAlgorithmException {
-//        ==================== SERVER WITHIN PEER
+
         //loads up your file manager on the regular instance
         ServerMain instance = new ServerMain();
         //load configs from the configuration file
@@ -27,7 +27,6 @@ public class Peer {
         String host =  Configuration.getConfiguration().get("advertisedName");
         String peers = Configuration.getConfiguration().get("peers");
 
-//        ==================== CLIENT WITHIN PEER
         ArrayList<pleaseworkClient> attemptedtoconnectclients= new ArrayList<>();
         //split all the peers which are seperated by commas from the config file
         String[] mypeers = peers.split(",");
@@ -54,10 +53,13 @@ public class Peer {
                 continue;
             }
         }
-        //makes a server thread
-        
+
+        // ==============================
+        // Create a server thread
+        // ==============================
         System.out.println("THESE ARE THE CURRENT PROPERTIES OF THE SERVER: "+ Configuration.getConfiguration());
         new Thread(new pleaseworkServer(host, Integer.parseInt(port))).start();
+        new Thread(new generatePeriodicSyncEvents()).start();
         
         /* infinite loop that checks if we have found a peer
         while(true) {
