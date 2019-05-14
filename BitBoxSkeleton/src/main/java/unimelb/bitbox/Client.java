@@ -1,7 +1,6 @@
 package unimelb.bitbox;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.UnknownHostException;
 import java.security.NoSuchAlgorithmException;
 import java.util.logging.Logger;
@@ -11,24 +10,27 @@ import org.kohsuke.args4j.CmdLineParser;
 import unimelb.bitbox.util.Document;
 import unimelb.bitbox.util.HostPort;
 import java.net.Socket;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 
 
 public class Client {
-    private static Logger log = Logger.getLogger(Peer.class.getName());
+    private static Logger log = Logger.getLogger(Client.class.getName());
+    private static final String PRIVATE_KEY_FILE = "bitboxclient_rsa";
 
     public static void main(String[] args) throws IOException, NumberFormatException, NoSuchAlgorithmException{
 
         String command = null;
         HostPort server = null;
         HostPort peer;
+        String identity = null;
 
-        //TODO:fetch the identity from somewhere
-        String identity = "aaron@krusty";//placeholder
         //TODO: fetch the private key and parse it
+        try (InputStream inputStream = new FileInputStream(PRIVATE_KEY_FILE)) {
+            //TODO:process the private key file
+            //TODO:parse the pem
+            //TODO:convert PKCS#1 to PKCS#8
+        } catch (IOException e) {
+            log.warning("Could not read file " + PRIVATE_KEY_FILE);
+        }
 
         //Object that will store the command line arguments
         CmdLineArgs cmdLineArgs = new CmdLineArgs();
@@ -41,6 +43,7 @@ public class Client {
             cmdLineParser.parseArgument(args);
             command = cmdLineArgs.getCommand();
             server = cmdLineArgs.getServer();
+            identity = cmdLineArgs.getIdentity();
 
             //For testing purpose
             System.out.println("the command is " + command);

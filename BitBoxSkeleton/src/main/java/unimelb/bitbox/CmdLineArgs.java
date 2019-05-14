@@ -11,9 +11,13 @@ public class CmdLineArgs {
     @Option(required = true, name = "-s", usage = "Server")
     private String server;
 
+    @Option(required = true, name = "-i", usage = "identity")
+    private String identity;
+
     @Option(required = false, name = "-p", usage = "Peer")
     private String peer;
 
+    //TODO: do we need to check if the commands are valid here?
     public String getCommand(){
         return command;
     }
@@ -22,6 +26,9 @@ public class CmdLineArgs {
     }
     public HostPort getPeer(){
         return new HostPort(peer);
+    }
+    public String getIdentity(){
+        return identity;
     }
 
 }
