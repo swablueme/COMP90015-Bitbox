@@ -293,14 +293,14 @@ public class jsonMarshaller {
         return DISCONNECT_PEER_RESPONSE.toString();
     }
     //TODO
-    static String encryptMessage(String key, String messages ){
+    static String encryptMessage(String key, String messages ) {
         Document encryptedMessage = new Document();
 
         //TODO: encrypt the message with secret key
-        encryptedMessage.append("payload","");//TODO
+        encryptedMessage.append("payload", "");//TODO
 
         return encryptedMessage.toString();
-
+    }
 
 
 }

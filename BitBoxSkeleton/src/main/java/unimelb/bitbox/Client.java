@@ -137,7 +137,7 @@ public class Client {
                 cmdLineParser.printUsage(System.err);
                 System.exit(0);
             }
-            
+
             out.write(jsonMarshaller.encryptMessage(secretKey, request) + "\n");
             out.flush();
             System.out.println("command sent");
