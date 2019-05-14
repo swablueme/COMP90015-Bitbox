@@ -23,7 +23,9 @@ public class jsonMarshaller {
         pathnameNotExists("pathname does not exist"),
         successfulRead("successful read"),
         unsuccessfulRead("unsuccessful read"),
-        fileCreated("file created");
+        fileCreated("file created"),
+        publicKeyFound("public key found"),
+        publicKeyNotFound("public key not found");
 
         private String value;
 
@@ -185,9 +187,9 @@ public class jsonMarshaller {
         DIRECTORY_CREATE_RESPONSE.append("pathName", pathName);
         DIRECTORY_CREATE_RESPONSE.append("message", message.getValue());
         if(message == Messages.directoryCreated){
-            DIRECTORY_CREATE_RESPONSE.append("status","true");
+            DIRECTORY_CREATE_RESPONSE.append("status",true);
         }else{
-            DIRECTORY_CREATE_RESPONSE.append("status","false");
+            DIRECTORY_CREATE_RESPONSE.append("status",false);
         }
         return DIRECTORY_CREATE_RESPONSE.toJson();
     }
@@ -203,6 +205,27 @@ public class jsonMarshaller {
         }
 
         return DIRECTORY_DELETE_RESPONSE.toJson();
+    }
+    static String createAUTH_REQUEST(String identity){
+        Document AUTH_REQUEST = new Document();
+        AUTH_REQUEST.append("command","AUTH_REQUEST");
+        AUTH_REQUEST.append("identity", identity);
+        return AUTH_REQUEST.toString();
+    }
+    static String createAUTH_RESPONSE(){
+        Document AUTH_RESPONSE = new Document();
+        AUTH_RESPONSE.append("command","AUTH_RESPONSE");
+        AUTH_RESPONSE.append("status", false);
+        AUTH_RESPONSE.append("message", Messages.publicKeyNotFound.getValue());
+        return AUTH_RESPONSE.toString();
+    }
+    static String createAUTH_RESPONSE(String key){
+        Document AUTH_RESPONSE = new Document();
+        AUTH_RESPONSE.append("command","AUTH_RESPONSE");
+        AUTH_RESPONSE.append("AES128", key);
+        AUTH_RESPONSE.append("status", true);
+        AUTH_RESPONSE.append("message",Messages.publicKeyFound.getValue());
+        return AUTH_RESPONSE.toString();
     }
 
 
