@@ -4,6 +4,7 @@ import unimelb.bitbox.util.Document;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import unimelb.bitbox.util.FileSystemManager.FileSystemEvent;
+import unimelb.bitbox.util.HostPort;
 
 public class jsonMarshaller {
 
@@ -25,7 +26,11 @@ public class jsonMarshaller {
         unsuccessfulRead("unsuccessful read"),
         fileCreated("file created"),
         publicKeyFound("public key found"),
-        publicKeyNotFound("public key not found");
+        publicKeyNotFound("public key not found"),
+        connectedToPeer("connected to peer"),
+        connectionFailed("connection failed"),
+        disconnectedFromPeer("disconnected from peer"),
+        connectionNotActive("connection not active");
 
         private String value;
 
@@ -227,6 +232,75 @@ public class jsonMarshaller {
         AUTH_RESPONSE.append("message",Messages.publicKeyFound.getValue());
         return AUTH_RESPONSE.toString();
     }
+    static String createLIST_PEERS_REQUEST(){
+        Document LIST_PEERS_REQUEST = new Document();
+        LIST_PEERS_REQUEST.append("command","LIST_PEERS_REQUEST");
+        return LIST_PEERS_REQUEST.toString();
+    }
+    static String createLIST_PEERS_RESPONSE(){
+        Document LIST_PEERS_RESPONSE = new Document();
+        LIST_PEERS_RESPONSE.append("command","LIST_PEERS_RESPONSE");
+        ArrayList<Document> peerleest = new ArrayList<>();
+
+        //FIXME: Please check if the usage of peerList is correct
+        for (clientSocket peer : peerList.getPeerList()) {
+            Document peers = new Document();
+            peers.append("host", peer.connRequestHost());
+            peers.append("port", peer.getconnRequestServerPort());
+            peerleest.add(peers);
+        }
+        LIST_PEERS_RESPONSE.append("peers", peerleest);
+        return LIST_PEERS_RESPONSE.toString();
+    }
+    static String createClientCONNECT_PEER_REQUEST(HostPort peer){
+        Document CONNECT_PEER_REQUEST = new Document();
+        CONNECT_PEER_REQUEST.append("command","CONNECT_PEER_REQUEST");
+        CONNECT_PEER_REQUEST.append("host", peer.host);
+        CONNECT_PEER_REQUEST.append("host", peer.port);
+        return CONNECT_PEER_REQUEST.toString();
+    }
+    static String createClientCONNECT_PEER_RESPONSE(HostPort peer, Messages message){
+        Document CONNECT_PEER_RESPONSE = new Document();
+        CONNECT_PEER_RESPONSE.append("command","CONNECT_PEER_RESPONSE");
+        CONNECT_PEER_RESPONSE.append("host", peer.host);
+        CONNECT_PEER_RESPONSE.append("host", peer.port);
+        if(message == Messages.connectedToPeer){
+            CONNECT_PEER_RESPONSE.append("status", true);
+        } else {
+            CONNECT_PEER_RESPONSE.append("status", false);
+        }
+        CONNECT_PEER_RESPONSE.append("message", message.getValue());
+        return CONNECT_PEER_RESPONSE.toString();
+    }
+    static String createDISCONNECT_PEER_REQUEST(HostPort peer){
+        Document DISCONNECT_PEER_REQUEST = new Document();
+        DISCONNECT_PEER_REQUEST.append("command","DISCONNECT_PEER_REQUEST");
+        DISCONNECT_PEER_REQUEST.append("host", peer.host);
+        DISCONNECT_PEER_REQUEST.append("host", peer.port);
+        return DISCONNECT_PEER_REQUEST.toString();
+    }
+    static String createDISCONNECT_PEER_RESPONSE(HostPort peer, Messages message){
+        Document DISCONNECT_PEER_RESPONSE = new Document();
+        DISCONNECT_PEER_RESPONSE.append("command","DISCONNECT_PEER_RESPONSE");
+        DISCONNECT_PEER_RESPONSE.append("host", peer.host);
+        DISCONNECT_PEER_RESPONSE.append("host", peer.port);
+        if(message == Messages.disconnectedFromPeer){
+            DISCONNECT_PEER_RESPONSE.append("status", true);
+        } else {
+            DISCONNECT_PEER_RESPONSE.append("status", false);
+        }
+        DISCONNECT_PEER_RESPONSE.append("message", message.getValue());
+        return DISCONNECT_PEER_RESPONSE.toString();
+    }
+    //TODO
+    static String encryptMessage(String key, String messages ){
+        Document encryptedMessage = new Document();
+
+        //TODO: encrypt the message with secret key
+        encryptedMessage.append("payload","");//TODO
+
+        return encryptedMessage.toString();
+
 
 
 }
