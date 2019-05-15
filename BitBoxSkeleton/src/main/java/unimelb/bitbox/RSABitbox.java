@@ -1,24 +1,24 @@
-package com.kaisoon;
+package unimelb.bitbox;
 
 import javax.swing.plaf.nimbus.NimbusLookAndFeel;
 import java.math.BigInteger;
 import java.security.SecureRandom;
 
 /**
- * RSA is written to be used in conjunction with the Bitbox distributed file system written in this project. When a
- * peer is created in the system, an RSA object should be instantiated. Upon construction of the object, a set of
+ * RSABitbox is written to be used in conjunction with the Bitbox distributed file system written in this project. When a
+ * peer is created in the system, an RSABitbox object should be instantiated. Upon construction of the object, a set of
  * public/private key pair will be generated. The program can freely access the public key using the getPublicKey()
  * method.
  * The following example will demonstrate how two peers can use this class to encrypt and decrypt transmitted messages:
- * - Should Peer1 wants to send an encrypted message to Peer2, Peer1 shall first instantiate an RSA object
- * - Peer1 shall access the public key of the RSA object and sends it to Peer2
+ * - Should Peer1 wants to send an encrypted message to Peer2, Peer1 shall first instantiate an RSABitbox object
+ * - Peer1 shall access the public key of the RSABitbox object and sends it to Peer2
  * - Peer2 shall use encrypt(String message, BigInteger publicKey) to encrypt the message, where the
  * argument publicKey is the publicKey of Peer1
  * - Peer2 shall send the cipherText to Peer1
  * - Peer1 shall then decrypt the cipherText using decrypt(String message)
  *
  * rand is a cryptographically secure random number used in generating the keys
- * N is the modulus of the RSA encryption. N is present in both public and private keys.
+ * N is the modulus of the RSABitbox encryption. N is present in both public and private keys.
  * e is the encryption key used as part of the public key to encrypt messages
  * d is the decryption key used as part of the private key to decrypt cipher-texts
  * BITLENGTH is the number of bits the two distinct prime numbers p and q will have
@@ -27,7 +27,7 @@ import java.security.SecureRandom;
  *  * @version 1.1
  *  * @since 12-05-2019
  */
-public class RSA
+public class RSABitbox
 {
     private SecureRandom rand;
     private BigInteger N = null;
@@ -39,11 +39,11 @@ public class RSA
 
     // ============================== Constructor
     /**
-     * Instantiate an RSA object.
+     * Instantiate an RSABitbox object.
      * generateKeys() is called upon the construction of an object such that all all keys are available and ready for
      * use in encryption and decryption.
      */
-    public RSA()
+    public RSABitbox()
     {
         this.rand = new SecureRandom();
         this.generateKeys();
@@ -168,7 +168,7 @@ public class RSA
      * coPrime() is used to generate a number e that is coPrime of phi and N
      * Two numbers are co-prime of each other if their greatest common divisor GCD is equal to 1
      * gcd(N, e) = 1
-     * @param phi is the Euler phi of the RSA encryption
+     * @param phi is the Euler phi of the RSABitbox encryption
      * @return e which is a co-prime of N and is the public encryption key
      */
     private BigInteger coPrime(BigInteger phi, BigInteger N)
