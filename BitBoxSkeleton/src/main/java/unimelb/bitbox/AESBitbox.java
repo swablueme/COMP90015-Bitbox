@@ -1,6 +1,7 @@
 package unimelb.bitbox;
 
 import javax.crypto.*;
+import javax.crypto.spec.SecretKeySpec;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
@@ -122,5 +123,8 @@ public class AESBitbox
             e.getMessage();
         }
         return null;
+    }
+    public static SecretKey keyBytesToKey(byte[] keybytes){
+        return new SecretKeySpec(keybytes,"AES");
     }
 }
