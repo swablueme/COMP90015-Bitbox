@@ -90,15 +90,17 @@ public class Client {
             System.out.println("Auth request sent"); //for testing purpose
 
             //wait for the server response
-            String received = in.readLine();
+            String received = null;
+            if(in.ready()){ received = in.readLine();}
+
             System.out.println("authenticate response received");
             Document authResponse = Document.parse(received);
-            System.out.println(authResponse.toString());
+            prettyPrinter.print(received);
 
             if(authResponse.getBoolean("status")){
 
                 String encrypted_key = authResponse.getString("AES128");
-                System.out.println(authResponse.getString("message"));//FIXME:testing purpose
+                System.out.println(authResponse.getString("message"));
 
                 //decrypted the key
                 String decrypted_key = getDecrypted(privateKey,encrypted_key);
@@ -115,7 +117,6 @@ public class Client {
 
             //After authentication, start sending encrypted request and wait for encrypted response
             String request = null;
-            //FIXME:check if the command is valid. Should've also checked if the server is valid but I'm not sure where
             if(command.equals("list_peers")){
 
                 request = jsonMarshaller.createLIST_PEERS_REQUEST();
@@ -142,10 +143,10 @@ public class Client {
             out.flush();
             System.out.println("command sent");
 
-            String response = in.readLine();
+            String response = null;
+            if(in.ready()){response = in.readLine();}
             System.out.println("command response received");
-            Document cmdResponse = Document.parse(response);
-            System.out.println(cmdResponse.toString());
+            prettyPrinter.print(response);
 
 
         } catch (UnknownHostException e) {
@@ -217,6 +218,6 @@ public class Client {
         cipher.init(Cipher.DECRYPT_MODE,privateKey);
 
         //FIXME: Really not sure about the encoding here...
-        return new String(cipher.doFinal(encrypted.getBytes("utf-8") ) );
+        return new String(cipher.doFinal(encrypted.getBytes()),"UTF-8");
     }
 }
