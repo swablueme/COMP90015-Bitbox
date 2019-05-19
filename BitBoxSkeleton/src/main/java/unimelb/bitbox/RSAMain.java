@@ -100,7 +100,7 @@ public class RSAMain {
                     }
                     System.out.println("plain : " + new String(plainText));
 
-                    SecretKey secretDecrypted = new SecretKeySpec(plainText,"AES");
+                    SecretKey secretDecrypted = AESBitbox.keyBytesToKey(plainText);
                     if(secret.equals(secretDecrypted)){
                         LOGGER.info("same keys");
                     } else {
