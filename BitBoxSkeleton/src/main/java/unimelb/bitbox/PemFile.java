@@ -12,7 +12,12 @@ import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
 import org.bouncycastle.util.io.pem.PemWriter;
 
-    public class PemFile {
+/**
+ * A class to read pem file and create a pem object
+ * @author txedo
+ * @availability https://github.com/txedo/bouncycastle-rsa-pem-read/blob/master/src/main/java/me/txedo/security/PemFile.java
+ */
+public class PemFile {
 
         private PemObject pemObject;
 
@@ -42,4 +47,4 @@ import org.bouncycastle.util.io.pem.PemWriter;
             return pemObject;
         }
 
-    }
+}

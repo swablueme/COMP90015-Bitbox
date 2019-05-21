@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import unimelb.bitbox.util.FileSystemManager.FileSystemEvent;
 import unimelb.bitbox.util.HostPort;
 
+import javax.crypto.SecretKey;
+
 public class jsonMarshaller {
 
     public enum Messages {
@@ -256,14 +258,14 @@ public class jsonMarshaller {
         Document CONNECT_PEER_REQUEST = new Document();
         CONNECT_PEER_REQUEST.append("command","CONNECT_PEER_REQUEST");
         CONNECT_PEER_REQUEST.append("host", peer.host);
-        CONNECT_PEER_REQUEST.append("host", peer.port);
+        CONNECT_PEER_REQUEST.append("port", peer.port);
         return CONNECT_PEER_REQUEST.toString();
     }
     static String createClientCONNECT_PEER_RESPONSE(HostPort peer, Messages message){
         Document CONNECT_PEER_RESPONSE = new Document();
         CONNECT_PEER_RESPONSE.append("command","CONNECT_PEER_RESPONSE");
         CONNECT_PEER_RESPONSE.append("host", peer.host);
-        CONNECT_PEER_RESPONSE.append("host", peer.port);
+        CONNECT_PEER_RESPONSE.append("port", peer.port);
         if(message == Messages.connectedToPeer){
             CONNECT_PEER_RESPONSE.append("status", true);
         } else {
@@ -276,14 +278,14 @@ public class jsonMarshaller {
         Document DISCONNECT_PEER_REQUEST = new Document();
         DISCONNECT_PEER_REQUEST.append("command","DISCONNECT_PEER_REQUEST");
         DISCONNECT_PEER_REQUEST.append("host", peer.host);
-        DISCONNECT_PEER_REQUEST.append("host", peer.port);
+        DISCONNECT_PEER_REQUEST.append("port", peer.port);
         return DISCONNECT_PEER_REQUEST.toString();
     }
     static String createDISCONNECT_PEER_RESPONSE(HostPort peer, Messages message){
         Document DISCONNECT_PEER_RESPONSE = new Document();
         DISCONNECT_PEER_RESPONSE.append("command","DISCONNECT_PEER_RESPONSE");
         DISCONNECT_PEER_RESPONSE.append("host", peer.host);
-        DISCONNECT_PEER_RESPONSE.append("host", peer.port);
+        DISCONNECT_PEER_RESPONSE.append("port", peer.port);
         if(message == Messages.disconnectedFromPeer){
             DISCONNECT_PEER_RESPONSE.append("status", true);
         } else {
@@ -292,12 +294,10 @@ public class jsonMarshaller {
         DISCONNECT_PEER_RESPONSE.append("message", message.getValue());
         return DISCONNECT_PEER_RESPONSE.toString();
     }
-    //TODO
-    static String encryptMessage(String key, String messages ) {
+    static String encryptMessage(SecretKey key, String messages ) {
         Document encryptedMessage = new Document();
-
-        //TODO: encrypt the message with secret key
-        encryptedMessage.append("payload", "");//TODO
+        String cipherText = AESBitbox.encrypt(messages, key);
+        encryptedMessage.append("payload", cipherText);
 
         return encryptedMessage.toString();
     }

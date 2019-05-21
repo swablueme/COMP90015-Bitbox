@@ -2,45 +2,52 @@ package unimelb.bitbox;
 
 import java.io.*;
 import java.net.UnknownHostException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
+import java.security.*;
+import java.security.spec.RSAPublicKeySpec;
 import java.util.logging.Logger;
+
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import unimelb.bitbox.util.Configuration;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import unimelb.bitbox.util.Document;
 import unimelb.bitbox.util.HostPort;
 import java.net.Socket;
-import java.security.PrivateKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.KeyFactory;
+
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemReader;
-import javax.crypto.Cipher;
-import javax.crypto.NoSuchPaddingException;
-import java.util.Base64;
+
+import javax.crypto.*;
+import org.apache.commons.codec.binary.Base64;
 import javax.crypto.spec.SecretKeySpec;
 
 public class Client {
     private static Logger log = Logger.getLogger(Client.class.getName());
     private static final String PRIVATE_KEY_FILE = "bitboxclient_rsa";
 
-    public static void main(String[] args) throws IOException, NumberFormatException, NoSuchAlgorithmException{
+    public static void main(String[] args) throws IOException, NumberFormatException, NoSuchAlgorithmException,
+            NoSuchProviderException{
 
         String command = null;
         HostPort server = null;
         HostPort peer;
         String identity = null;
         PrivateKey privateKey = null;
-        String secretKey = null;
+        SecretKey secretKey = null;
+
+        Security.addProvider(new BouncyCastleProvider());
+        log.info("BouncyCastle provider added.");
+        KeyFactory factory = KeyFactory.getInstance("RSA", "BC");
 
         //fetch the private key and parse it
         try  {
             //read the private key file
             //parse the pem
             //convert PKCS#1 to PKCS#8
-            privateKey = createPrivateKeyFromPemFile(PRIVATE_KEY_FILE);
+            privateKey = generatePrivateKey(factory, PRIVATE_KEY_FILE);
+            log.info(String.format("Instantiated private key: %s", privateKey));
 
         } catch (IOException e) {
             log.warning("Could not read file " + PRIVATE_KEY_FILE);
@@ -61,15 +68,13 @@ public class Client {
             server = cmdLineArgs.getServer();
             identity = cmdLineArgs.getIdentity();
 
-            //For testing purpose
-            System.out.println("the command is " + command);
-            System.out.println("the peer connecting to is " + server.toString());
+            log.info("the command is " + command);
+            log.info("the peer connecting to is " + server.toString());
 
 
         } catch (CmdLineException e){
 
-            //FIXME:should I use Logger here?
-            System.err.println(e.getMessage());
+            log.warning(e.getMessage());
 
             //print the usage to help the user understand what the arguments for
             cmdLineParser.printUsage(System.err);
@@ -79,39 +84,43 @@ public class Client {
         Socket socket = null;
         try{
             socket = new Socket(server.host,server.port);
-            System.out.println("Connection established");
+            log.info("Connection established");
 
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(),"UTF-8"));
             BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(),"UTF-8"));
 
             //Ask to be authorized
-            out.write(jsonMarshaller.createAUTH_REQUEST(identity) + "\n");
+            String authrequest = jsonMarshaller.createAUTH_REQUEST(identity);
+            out.write( authrequest + "\n");
             out.flush();
-            System.out.println("Auth request sent"); //for testing purpose
+            log.info("Auth request sent");
+            prettyPrinter.print(authrequest);
 
             //wait for the server response
             String received = null;
             if(in.ready()){ received = in.readLine();}
 
-            System.out.println("authenticate response received");
+            log.info("authenticate response received");
             Document authResponse = Document.parse(received);
             prettyPrinter.print(received);
 
             if(authResponse.getBoolean("status")){
 
+                //get the key bytes that has been encoded with 64
                 String encrypted_key = authResponse.getString("AES128");
-                System.out.println(authResponse.getString("message"));
+                log.info(authResponse.getString("message"));
 
-                //decrypted the key
-                String decrypted_key = getDecrypted(privateKey,encrypted_key);
+                //decoded and decrypted the key bytes
+                byte[] plainText = getDecrypted(Base64.decodeBase64(encrypted_key),privateKey);
 
-                //FIXME:decode the secret key
-                secretKey = new String(Base64.getDecoder().decode(decrypted_key));
+                //generate the key from the key bytes
+                secretKey = AESBitbox.keyBytesToKey(plainText);
 
             }else{
 
                 //if the key is not found in the Peer, then this client is unauthorized
-                System.out.println(authResponse.getString("message"));
+                log.info(authResponse.getString("message"));
+                log.info("Terminating");
                 System.exit(0);
             }
 
@@ -139,15 +148,22 @@ public class Client {
                 System.exit(0);
             }
 
+            log.info("command ready to be sent");
+            prettyPrinter.print(request);
+
             out.write(jsonMarshaller.encryptMessage(secretKey, request) + "\n");
             out.flush();
-            System.out.println("command sent");
+            log.info("command sent");
 
             String response = null;
             if(in.ready()){response = in.readLine();}
-            System.out.println("command response received");
-            prettyPrinter.print(response);
+            Document encrypted_response = Document.parse(response);
+            log.info("command response received");
+            if(encrypted_response.containsKey("payload")){
 
+                String decryptedMessage = AESBitbox.decrypt(encrypted_response.getString("payload"),secretKey);
+                Document command_response = Document.parse(decryptedMessage);
+                prettyPrinter.print(decryptedMessage);}
 
         } catch (UnknownHostException e) {
             e.printStackTrace();
@@ -158,66 +174,40 @@ public class Client {
         }
 
         //the Client program terminate at the completion of the command
+        log.info("Terminating");
         System.exit(0);
 
 
     }
 
     /**
-     * MIT License
+     * A method to generate a private key object from the private key in pem file
      *
-     *     Copyright (c) 2017 Packt
-     *
-     *     Permission is hereby granted, free of charge, to any person obtaining a copy
-     *     of this software and associated documentation files (the "Software"), to deal
-     *     in the Software without restriction, including without limitation the rights
-     *     to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-     *     copies of the Software, and to permit persons to whom the Software is
-     *     furnished to do so, subject to the following conditions:
-     *
-     *     The above copyright notice and this permission notice shall be included in all
-     *     copies or substantial portions of the Software.
-     *
-     *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-     *     IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-     *     FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-     *     AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-     *     LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-     *     OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-     *     SOFTWARE.
-     *
-     * @param keyFileName
-     * @return a private key object
-     * @throws IOException
+     * @param factory
+     * @param filename
+     * @return a private Key
      * @throws InvalidKeySpecException
-     * @throws NoSuchAlgorithmException
-     * @author Packt
-     * @date 2017
-     * @available https://www.programcreek.com/java-api-examples/?api=org.bouncycastle.util.io.pem.PemReader
+     * @throws FileNotFoundException
+     * @throws IOException
+     * @availablity https://github.com/txedo/bouncycastle-rsa-pem-read
      */
-    //FIXME: How to properly cite third-party code?
-    private static PrivateKey createPrivateKeyFromPemFile(final String keyFileName) throws IOException,
-            InvalidKeySpecException, NoSuchAlgorithmException {
-
-        // Loads a privte key from the specified key file name
-        final PemReader pemReader = new PemReader(new FileReader(keyFileName));
-        final PemObject pemObject = pemReader.readPemObject();
-        final byte[] pemContent = pemObject.getContent();
-        pemReader.close();
-        final PKCS8EncodedKeySpec encodedKeySpec = new PKCS8EncodedKeySpec(pemContent);
-        final KeyFactory keyFactory = getKeyFactoryInstance();
-        final PrivateKey privateKey = keyFactory.generatePrivate(encodedKeySpec);
-        return privateKey;
-    }
-    private static KeyFactory getKeyFactoryInstance() throws NoSuchAlgorithmException {
-        return KeyFactory.getInstance("RSA");
+    private static PrivateKey generatePrivateKey(KeyFactory factory, String filename)
+            throws InvalidKeySpecException, FileNotFoundException, IOException {
+        PemFile pemFile = new PemFile(filename);
+        byte[] content = pemFile.getPemObject().getContent();
+        PKCS8EncodedKeySpec privKeySpec = new PKCS8EncodedKeySpec(content);
+        return factory.generatePrivate(privKeySpec);
     }
 
-    private static String getDecrypted (PrivateKey privateKey, String encrypted) throws Exception {
-        Cipher cipher = Cipher.getInstance("RSA");
-        cipher.init(Cipher.DECRYPT_MODE,privateKey);
+    private static byte[] getDecrypted (byte[] cipherText, PrivateKey privateKey) throws NoSuchAlgorithmException,
+            NoSuchPaddingException, NoSuchProviderException, InvalidKeyException, IllegalBlockSizeException,
+            BadPaddingException {
 
-        //FIXME: Really not sure about the encoding here...
-        return new String(cipher.doFinal(encrypted.getBytes()),"UTF-8");
+        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding","BC");
+        //Cipher cipher2 = Cipher.getInstance("RSA/None/NoPadding", "BC");
+        cipher.init(Cipher.DECRYPT_MODE, privateKey);
+        byte[] plainText = cipher.doFinal(cipherText) ;
+
+        return plainText;
     }
 }
