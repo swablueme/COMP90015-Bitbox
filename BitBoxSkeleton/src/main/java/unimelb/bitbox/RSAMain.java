@@ -39,8 +39,8 @@ public class RSAMain {
     public static void main(String[] args) throws FileNotFoundException,
             IOException, NoSuchAlgorithmException, NoSuchProviderException {
         Security.addProvider(new BouncyCastleProvider());
-
         LOGGER.info("BouncyCastle provider added.");
+
         String pubKeyConfig = Configuration.getConfiguration().get("authorized_keys");
         PrivateKey priv = null;
         PublicKey pub = null;
