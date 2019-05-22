@@ -127,6 +127,7 @@ public class jsonMarshaller {
         FILE_BYTES_RESPONSE.append("length", length);
         FILE_BYTES_RESPONSE.append("content",
                 base64Handler.byteBufferToBase64(content));
+        System.out.println(base64Handler.byteBufferToBase64(content).length());
         FILE_BYTES_RESPONSE.append("message", message.getValue());
         if (message == Messages.successfulRead) {
             FILE_BYTES_RESPONSE.append("status", true);

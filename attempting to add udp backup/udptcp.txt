@@ -6,9 +6,7 @@ import unimelb.bitbox.util.Document;
 import unimelb.bitbox.util.HostPort;
 import java.net.DatagramPacket;
 import java.net.SocketException;
-import java.net.InetAddress;
-import java.io.*;
-import org.json.JSONException;
+
 import java.util.*;
 
 public class pleaseworkClient<T extends baseSocket> implements Runnable {
@@ -67,6 +65,7 @@ public class pleaseworkClient<T extends baseSocket> implements Runnable {
 
         while (true) {
             try {
+                System.out.println("in clientmain");
                 if (Peer.mode.equals("tcp")) {
                     if (this.in.ready()) {
                         String received = this.in.readLine();
@@ -92,23 +91,16 @@ public class pleaseworkClient<T extends baseSocket> implements Runnable {
 
                 } else {
                     System.out.println("trying to read UDP");
-                    byte[] buffer = new byte[30000];
+                    byte[] buffer = new byte[Peer.bufferSize];
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
                     ((udpSocket) myclient).clientSock.receive(packet);
                     String receivedString = new String(packet.getData(), 0, packet.getLength());
                     System.out.println("READING: ");
-                    try {
-                        prettyPrinter.print(receivedString);
-                    } catch (JSONException e) {
-                        try (PrintStream out = new PrintStream(new FileOutputStream("filename.txt"))) {
-                            out.print(receivedString);
-                        }
-                    }
-
+                    prettyPrinter.print(receivedString);
                     Document message = Document.parse(receivedString);
                     System.out.println(message.toString());
-                    new Thread(readMessages(message, packet.getAddress(), packet.getPort())).start();
+                    new Thread(readMessages(message)).start();
                     System.out.println("found peer is: " + foundPeer);
                     if (foundPeer == false) {
                         System.out.println("Found peer was not found, exiting from socket");
@@ -128,91 +120,97 @@ public class pleaseworkClient<T extends baseSocket> implements Runnable {
         }
     }
 
-    public <T extends baseSocket> String readMessages(Document message, Object... OriginalSender) {
-        InetAddress address = null;
-        Integer port = null;
-        if (OriginalSender.length == 2) {
-            address = (InetAddress) OriginalSender[0];
-            port = (Integer) OriginalSender[1];
-            this.myclient.setHostPort(address, port);
-        }
+    public <T extends baseSocket> String readMessages(Document message) {
         //if we are the client connecting to another server
         System.out.println("parsing");
         if (message.getString("command").equals("HANDSHAKE_RESPONSE")) {
             //saves the contents of message into variables
             myclient.setCONNECTION_REQUESTdetails(message);
-            if (Peer.mode.equals("tcp")) {
-                if (peerList.isKnownPeer((clientSocket) myclient) != true) {
-                    peerList.addKnownPeers((clientSocket) myclient);
-                    foundPeer = true;
-                    System.out.println("our peerlist is now: " + peerList.getPeers());
-                    actOnMessages.generateSyncEvents();
+            HostPort gottenHostPort = new HostPort((Document) message.get("hostPort"));
+            String receivedHostPort = gottenHostPort.toString();
+            String myHostPort = myclient.toHostport();
+            if (myHostPort.equals(receivedHostPort)) {
+                if (Peer.mode.equals("tcp")) {
+                    if (peerList.isKnownPeer((clientSocket) myclient) != true) {
+                        peerList.addKnownPeers((clientSocket) myclient);
+                        foundPeer = true;
+                        System.out.println("our peerlist is now: " + peerList.getPeers());
+                        actOnMessages.generateSyncEvents();
+                    } else {
+                        System.out.println("Oppps!Duplicate connections!");
+                        foundPeer = false;
+
+                    }
                 } else {
-                    System.out.println("Oops!Duplicate connections!");
+                    if (udpPeerList.isKnownPeer((udpSocket) myclient) != true) {
+                        udpPeerList.addKnownPeers((udpSocket) myclient);
+                        foundPeer = true;
+                        System.out.println("our udp peerlist is now: " + udpPeerList.getPeers());
+                        actOnMessages.generateSyncEvents();
+                    } else {
+                        System.out.println("Oppps!Duplicate connections!");
+                        foundPeer = false;
+                    }
+
+                }
+            } else {
+                foundPeer = false;
+            }
+            //what else? do we close the socket?
+            //if we are the server owo
+        } else if (message.getString("command").equals("HANDSHAKE_REQUEST")) {
+
+            HostPort gottenHostPort = new HostPort((Document) message.get("hostPort"));
+            String receivedHostPort = gottenHostPort.toString();
+            String myHostPort = myclient.toHostport();
+            if (myHostPort.equals(receivedHostPort)) {
+                System.out.println("received a request");
+                myclient.setCONNECTION_REQUESTdetails(message);
+                System.out.println("set parameters");
+                //if our peer is not on the peerlist already
+                if (Peer.mode.equals("tcp")) {
+                    if (peerList.isKnownPeer((clientSocket) myclient) != true) {
+                        System.out.println("peer is unknown");
+                        //try adding the peer and if it exceeds the count this will return false
+                        if (peerList.addKnownPeers((clientSocket) myclient)) {
+                            System.out.println("our peerlist is now: " + peerList.getPeers());
+                            myclient.write(jsonMarshaller.createHANDSHAKE(this.myhost, this.myport, "HANDSHAKE_RESPONSE"));
+                            foundPeer = true;
+                            actOnMessages.generateSyncEvents();
+                        } //if our list is too full already
+                        else {
+                            myclient.write(jsonMarshaller.createCONNECTION_REFUSED(peerList.getPeerList()));
+                            foundPeer = false;
+                        }
+                    }
+                }
+                if (Peer.mode.equals("udp")) {
+                    if (udpPeerList.isKnownPeer((udpSocket) myclient) != true) {
+                        System.out.println("peer is unknown");
+                        //try adding the peer and if it exceeds the count this will return false
+                        if (udpPeerList.addKnownPeers((udpSocket) myclient)) {
+                            System.out.println("our udp peerlist is now: " + udpPeerList.getPeers());
+                            myclient.write(jsonMarshaller.createHANDSHAKE(this.myhost, this.myport, "HANDSHAKE_RESPONSE"));
+                            foundPeer = true;
+                            actOnMessages.generateSyncEvents();
+                        } //if our list is too full already
+                        else {
+                            myclient.write(jsonMarshaller.createCONNECTION_REFUSED(peerList.getPeerList()));
+                            foundPeer = false;
+                        }
+                    }
+
+                } //if the peer is trying to connect a SECOND TIME!
+                else {
+                    myclient.write(jsonMarshaller.createINVALID_PROTOCOL());
                     foundPeer = false;
 
                 }
             } else {
-                if (udpPeerList.isKnownPeer((udpSocket) myclient) != true) {
-                    udpPeerList.addKnownPeers(((udpSocket) myclient).clone());
-                    foundPeer = true;
-                    System.out.println("our udp peerlist is now: " + udpPeerList.getPeers());
-                    actOnMessages.generateSyncEvents();
-                } else {
-                    System.out.println("Oppps!Duplicate connections!");
-                    foundPeer = false;
-                }
-
-            }
-        } //what else? do we close the socket?
-        //if we are the server owo
-        else if (message.getString(
-                "command").equals("HANDSHAKE_REQUEST")) {
-            System.out.println("received a request");
-            myclient.setCONNECTION_REQUESTdetails(message);
-            System.out.println("set parameters");
-            //if our peer is not on the peerlist already
-            if (Peer.mode.equals("tcp")) {
-                if (peerList.isKnownPeer((clientSocket) myclient) != true) {
-                    System.out.println("peer is unknown");
-                    //try adding the peer and if it exceeds the count this will return false
-                    if (peerList.addKnownPeers((clientSocket) myclient)) {
-                        System.out.println("our peerlist is now: " + peerList.getPeers());
-                        myclient.write(jsonMarshaller.createHANDSHAKE(this.myhost, this.myport, "HANDSHAKE_RESPONSE"));
-                        foundPeer = true;
-                        actOnMessages.generateSyncEvents();
-                    } //if our list is too full already
-                    else {
-                        myclient.write(jsonMarshaller.createCONNECTION_REFUSED(peerList.getPeerList()));
-                        foundPeer = false;
-                    }
-                }
-            }
-            else if (Peer.mode.equals("udp")) {
-                if (udpPeerList.isKnownPeer((udpSocket) myclient) != true) {
-                    System.out.println("peer is unknown");
-                    //try adding the peer and if it exceeds the count this will return false
-                    if (udpPeerList.addKnownPeers(((udpSocket) myclient).clone())) {
-                        System.out.println("our udp peerlist is now: " + udpPeerList.getPeers());
-                        myclient.write(jsonMarshaller.createHANDSHAKE(this.myhost, this.myport, "HANDSHAKE_RESPONSE"));
-                        foundPeer = true;
-                        actOnMessages.generateSyncEvents();
-                    } //if our list is too full already
-                    else {
-                        myclient.write(jsonMarshaller.createCONNECTION_REFUSED(peerList.getPeerList()));
-                        foundPeer = false;
-                    }
-                }
-
-            } //if the peer is trying to connect a SECOND TIME!
-            else {
-                myclient.write(jsonMarshaller.createINVALID_PROTOCOL());
                 foundPeer = false;
-
             }
             //if we the peer got rejected
-        } else if (message.getString(
-                "command").equals("CONNECTION_REFUSED")) {
+        } else if (message.getString("command").equals("CONNECTION_REFUSED")) {
             ArrayList<Document> receivedPeers = (ArrayList<Document>) message.get("peers");
             this.peerQueue.add(receivedPeers);
             while (!this.peerQueue.isEmpty()) {
@@ -240,8 +238,7 @@ public class pleaseworkClient<T extends baseSocket> implements Runnable {
              System.out.println(receivedPeers);
              */
             foundPeer = false;
-        } else if (message.getString(
-                "command").equals("FILE_CREATE_REQUEST")) {
+        } else if (message.getString("command").equals("FILE_CREATE_REQUEST")) {
             String responseMessage = actOnMessages.fileCreateResponse(message);
             myclient.write(responseMessage);
             jsonunMarshaller producedmessage = new jsonunMarshaller(Document.parse(responseMessage));
@@ -259,30 +256,24 @@ public class pleaseworkClient<T extends baseSocket> implements Runnable {
              exceptionHandler.handleException(e);
              }
              */
-        } else if (message.getString(
-                "command").equals("FILE_BYTES_REQUEST")) {
+        } else if (message.getString("command").equals("FILE_BYTES_REQUEST")) {
             String responseMessage = actOnMessages.fileBytesRequestResponse(message);
             myclient.write(responseMessage);
-        } else if (message.getString(
-                "command").equals("FILE_BYTES_RESPONSE")) {
+        } else if (message.getString("command").equals("FILE_BYTES_RESPONSE")) {
             String responseMessage = actOnMessages.processReceivedFile(message);
             if (!responseMessage.equals("done") && !responseMessage.equals("issue")) {
                 myclient.write(responseMessage);
             }
-        } else if (message.getString(
-                "command").equals("FILE_DELETE_REQUEST")) {
+        } else if (message.getString("command").equals("FILE_DELETE_REQUEST")) {
             String responseMessage = actOnMessages.fileDeleteResponse(message);
             myclient.write(responseMessage);
-        } else if (message.getString(
-                "command").equals("DIRECTORY_CREATE_REQUEST")) {
+        } else if (message.getString("command").equals("DIRECTORY_CREATE_REQUEST")) {
             String responseMessage = actOnMessages.directoryCreateRequestResponse(message);
             myclient.write(responseMessage);
-        } else if (message.getString(
-                "command").equals("DIRECTORY_DELETE_REQUEST")) {
+        } else if (message.getString("command").equals("DIRECTORY_DELETE_REQUEST")) {
             String responseMessage = actOnMessages.directoryDeleteRequestResponse(message);
             myclient.write(responseMessage);
-        } else if (message.getString(
-                "command").equals("FILE_MODIFY_REQUEST")) {
+        } else if (message.getString("command").equals("FILE_MODIFY_REQUEST")) {
             String responseMessage = actOnMessages.fileModifyRequestResponse(message);
             myclient.write(responseMessage);
             jsonunMarshaller producedmessage = new jsonunMarshaller(Document.parse(responseMessage));
@@ -291,10 +282,7 @@ public class pleaseworkClient<T extends baseSocket> implements Runnable {
                 myclient.write(bytesRequest);
             }
         }
-
-        System.out.println(
-                "returning");
-
+        System.out.println("returning");
         return "";
     }
 
