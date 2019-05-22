@@ -173,11 +173,22 @@ public class Peer {
 
                     //FIXME:random generated for potential padding
                     SecureRandom random = new SecureRandom();
+                    byte[] padding = new byte[publicKey.getEncoded().length - keyBytes.length];
+                    random.nextBytes(padding);
+                    log.info("The length of secret key is" + keyBytes.length);
+                    log.info("The length of public key is" + publicKey.getEncoded().length);
+                    log.info("The padding size is " + padding.length);
+
+                    //merge two bytes array
+                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                    outputStream.write(keyBytes);
+                    outputStream.write(padding);
+                    byte[] key_padding = outputStream.toByteArray();
+
                     //backup code: Cipher cipher1 = Cipher.getInstance("RSA/None/NoPadding", "BC");
-                    //FIXME: the padding here need more research
-                    Cipher cipher1 = Cipher.getInstance("RSA/ECB/PKCS1Padding","BC");
+                    Cipher cipher1 = Cipher.getInstance("RSA/None/NoPadding","BC");
                     cipher1.init(Cipher.ENCRYPT_MODE, publicKey);
-                    byte[] cipherText = cipher1.doFinal(keyBytes);
+                    byte[] cipherText = cipher1.doFinal(key_padding);
                     String encodedEncryptedKey = Base64.encodeBase64String(cipherText);
                     String authResponse = jsonMarshaller.createAUTH_RESPONSE(encodedEncryptedKey);
                     out.write(authResponse+ "\n");
