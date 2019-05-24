@@ -171,9 +171,10 @@ public class Peer {
                     //Turn the secret key to the key bytes for encryption
                     byte [] keyBytes = secretKey.getEncoded();
 
-                    //FIXME:random generated for potential padding
+                    //random generated for padding
                     SecureRandom random = new SecureRandom();
-                    byte[] padding = new byte[publicKey.getEncoded().length - keyBytes.length];
+                    int publicKeySize = 256;
+                    byte[] padding = new byte[ publicKeySize - keyBytes.length];
                     random.nextBytes(padding);
                     log.info("The length of secret key is" + keyBytes.length);
                     log.info("The length of public key is" + publicKey.getEncoded().length);

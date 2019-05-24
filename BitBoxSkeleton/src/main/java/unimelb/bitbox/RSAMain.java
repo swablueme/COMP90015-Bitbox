@@ -100,7 +100,9 @@ public class RSAMain {
                         LOGGER.info("What the fuck, it's not working!");
                     }
                     System.out.println("plain : " );
-                    prettyPrinter.print(new String(plainText));
+                    //prettyPrinter.print(new String(plainText));
+                    LOGGER.info("Public key bytes length: " + pub.getEncoded().length);
+                    LOGGER.info("Padding bytes length: " + (pub.getEncoded().length - secret.getEncoded().length ));
                     /*
                     SecretKey secretDecrypted = AESBitbox.keyBytesToKey(plainText);
                     if(secret.equals(secretDecrypted)){
