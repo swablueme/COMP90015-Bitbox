@@ -172,24 +172,23 @@ public class Peer {
                     byte [] keyBytes = secretKey.getEncoded();
 
                     //random generated for padding
-                    SecureRandom random = new SecureRandom();
-                    int publicKeySize = 256;
-                    byte[] padding = new byte[ publicKeySize - keyBytes.length];
-                    random.nextBytes(padding);
-                    log.info("The length of secret key is" + keyBytes.length);
-                    log.info("The length of public key is" + publicKey.getEncoded().length);
-                    log.info("The padding size is " + padding.length);
+                    //SecureRandom random = new SecureRandom();
+                    //int publicKeySize = 256;
+                    //byte[] padding = new byte[ publicKeySize - keyBytes.length];
+                    //random.nextBytes(padding);
+                    //log.info("The length of secret key is" + keyBytes.length);
+                    //log.info("The padding size is " + padding.length);
 
                     //merge two bytes array
-                    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                    outputStream.write(keyBytes);
-                    outputStream.write(padding);
-                    byte[] key_padding = outputStream.toByteArray();
+                    //ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                    //outputStream.write(keyBytes);
+                    //outputStream.write(padding);
+                    //byte[] key_padding = outputStream.toByteArray();
 
                     //backup code: Cipher cipher1 = Cipher.getInstance("RSA/None/NoPadding", "BC");
-                    Cipher cipher1 = Cipher.getInstance("RSA/None/NoPadding","BC");
+                    Cipher cipher1 = Cipher.getInstance("RSA/ECB/PKCS1Padding","BC");
                     cipher1.init(Cipher.ENCRYPT_MODE, publicKey);
-                    byte[] cipherText = cipher1.doFinal(key_padding);
+                    byte[] cipherText = cipher1.doFinal(keyBytes);
                     String encodedEncryptedKey = Base64.encodeBase64String(cipherText);
                     String authResponse = jsonMarshaller.createAUTH_RESPONSE(encodedEncryptedKey);
                     out.write(authResponse+ "\n");
