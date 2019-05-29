@@ -225,6 +225,7 @@ public class pleaseworkClient<T extends baseSocket> implements Runnable {
             //if we the peer got rejected
         } else if (message.getString(
                 "command").equals("CONNECTION_REFUSED")) {
+            //TODO： Determine if this connection is from command or Peer
             ArrayList<Document> receivedPeers = (ArrayList<Document>) message.get("peers");
             this.peerQueue.add(receivedPeers);
             while (!this.peerQueue.isEmpty()) {
