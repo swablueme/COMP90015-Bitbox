@@ -24,16 +24,19 @@ public class Peer {
 
     private static Logger log = Logger.getLogger(Peer.class.getName());
 
+    public static String mode = Configuration.getConfiguration().get("mode");
+    public static Integer bufferSize = Integer.parseInt(Configuration.getConfiguration().get("blockSize"));
     public static void main(String[] args) throws IOException, NumberFormatException, NoSuchAlgorithmException,
             NoSuchProviderException {
+
 
         //loads up your file manager on the regular instance
         ServerMain instance = new ServerMain();
         //load configs from the configuration file
         String port = Configuration.getConfiguration().get("port");
-        String clientPort = Configuration.getConfiguration().get("clientPort");
         String host = Configuration.getConfiguration().get("advertisedName");
         String peers = Configuration.getConfiguration().get("peers");
+        String clientPort = Configuration.getConfiguration().get("clientPort");
         String pubKeyConfig = Configuration.getConfiguration().get("authorized_keys");
 
         //Split all the public keys which are separated by commas from the config file
@@ -42,7 +45,14 @@ public class Peer {
         HashMap<String, PublicKey> keys = new HashMap<>();
         String[] pubKeys = pubKeyConfig.split(",");
         KeyFactory factory = KeyFactory.getInstance("RSA", "BC");
-
+        ArrayList<pleaseworkClient> attemptedtoconnectclients = new ArrayList<>();
+        //split all the peers which are seperated by commas from the config file
+        String[] mypeers = peers.split(",");
+        udpSocket myUDPClient = null;
+        if (mode.equals("udp")) {
+            udpSocket.setSocket(port);
+        }
+                      
         for (String pubKeyString : pubKeys) {
             try {
                 String[] pubKeyStrings = pubKeyString.split(" ");
@@ -64,28 +74,35 @@ public class Peer {
         }
 
 
-        ArrayList<pleaseworkClient> attemptedtoconnectclients = new ArrayList<>();
-        //split all the peers which are seperated by commas from the config file
-        String[] mypeers = peers.split(",");
-
         //add them to the queue
         for (String peer : mypeers) {
             HostPort hostPort = new HostPort(peer);
-            clientSocket myClient = null;
+            System.out.println("hostport: "+hostPort);
 
             try {
                 //for each client attempt to create a socket and thread
                 //if this fails it's because the client is offline
                 if (!(visited.getList()).contains(hostPort)) {
-                    myClient = new clientSocket(hostPort.host, hostPort.port);
-                    pleaseworkClient myClientinstance = new pleaseworkClient(myClient, host, Integer.parseInt(port));
-                    visited.addElement(hostPort);
-                    System.out.println("visited list: " + visited.getList());
-                    attemptedtoconnectclients.add(myClientinstance);
-                    new Thread(myClientinstance).start();
+                    if (mode.equals("tcp")) {
+                        clientSocket myClient = new clientSocket(hostPort.host, hostPort.port);
+                        pleaseworkClient myClientinstance = new pleaseworkClient(myClient, host, Integer.parseInt(port));
+                        visited.addElement(hostPort);
+                        System.out.println("visited list: " + visited.getList());
+                        attemptedtoconnectclients.add(myClientinstance);
+                        new Thread(myClientinstance).start();
+                    }
+                    else {
+                        udpSocket myClient = new udpSocket(hostPort.host, hostPort.port); 
+                        pleaseworkClient myClientinstance = new pleaseworkClient(myClient, host, Integer.parseInt(port));
+                        visited.addElement(hostPort);
+                        System.out.println("starting");
+                        new Thread(myClientinstance).start();
+                        
+                    }
                 }
                 //wait some time for the CONNECTION_REFUSED to be added to the peerFinding list
             } catch (Exception e) {
+                System.out.println("Issue");
                 exceptionHandler.handleException(e);
                 continue;
             }
@@ -94,21 +111,16 @@ public class Peer {
         // ==============================
         // Create a server thread
         // ==============================
-        System.out.println("THESE ARE THE CURRENT PROPERTIES OF THE SERVER: " + Configuration.getConfiguration());
-        new Thread(new pleaseworkServer(host, Integer.parseInt(port))).start();
-        new Thread(new generatePeriodicSyncEvents()).start();
+
+        if (mode.equals("tcp")) {
+            System.out.println("THESE ARE THE CURRENT PROPERTIES OF THE SERVER: " + Configuration.getConfiguration());
+            new Thread(new pleaseworkServer(host, Integer.parseInt(port))).start();
+            new Thread(new generatePeriodicSyncEvents()).start();
+        }
 
         //start listening on client on client port
         new Thread(() -> listenOnClient(Integer.parseInt(clientPort),keys));
         
-        /* infinite loop that checks if we have found a peer
-        while(true) {
-            for (pleaseworkClient client:attemptedtoconnectclients) {
-                System.out.println(client.foundPeer);
-            }
-            
-        }
-        */
     }
 
     public static void listenOnClient(Integer clientPort, HashMap<String,PublicKey> keys) {
@@ -159,10 +171,21 @@ public class Peer {
                     //Turn the secret key to the key bytes for encryption
                     byte [] keyBytes = secretKey.getEncoded();
 
-                    //FIXME:random generated for potential padding
-                    SecureRandom random = new SecureRandom();
+                    //random generated for padding
+                    //SecureRandom random = new SecureRandom();
+                    //int publicKeySize = 256;
+                    //byte[] padding = new byte[ publicKeySize - keyBytes.length];
+                    //random.nextBytes(padding);
+                    //log.info("The length of secret key is" + keyBytes.length);
+                    //log.info("The padding size is " + padding.length);
+
+                    //merge two bytes array
+                    //ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                    //outputStream.write(keyBytes);
+                    //outputStream.write(padding);
+                    //byte[] key_padding = outputStream.toByteArray();
+
                     //backup code: Cipher cipher1 = Cipher.getInstance("RSA/None/NoPadding", "BC");
-                    //FIXME: the padding here need more research
                     Cipher cipher1 = Cipher.getInstance("RSA/ECB/PKCS1Padding","BC");
                     cipher1.init(Cipher.ENCRYPT_MODE, publicKey);
                     byte[] cipherText = cipher1.doFinal(keyBytes);

@@ -7,6 +7,7 @@ import java.security.spec.RSAPublicKeySpec;
 import java.util.logging.Logger;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.util.Arrays;
 import unimelb.bitbox.util.Configuration;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
@@ -112,6 +113,9 @@ public class Client {
 
                 //decoded and decrypted the key bytes
                 byte[] plainText = getDecrypted(Base64.decodeBase64(encrypted_key),privateKey);
+
+                //extract the first 128 bytes
+                //byte[] keyBytes = Arrays.copyOfRange(plainText,0,127);
 
                 //generate the key from the key bytes
                 secretKey = AESBitbox.keyBytesToKey(plainText);

@@ -10,15 +10,8 @@ import java.io.BufferedWriter;
 public class clientSocket extends baseSocket {
 
     private static Logger log = Logger.getLogger(Peer.class.getName());
-    
-    //numbers of clients connected
-    private static int clientCount = 0;
+
     private Socket clientSock = null;
-
-    //values from CONNECTION_REQUEST
-    private Integer connRequestServerPort = null;
-    private String connRequestHost = null;
-
 
     //create new client from configuration file
     clientSocket(String host, Integer port) {
@@ -31,28 +24,28 @@ public class clientSocket extends baseSocket {
         } catch (Exception e) {
             exceptionHandler.handleException(e);
         }
-        
+
         //log.info("made a new client from configuration file");
     }
 
     //create a new client from the accept
     clientSocket(Socket clientSocket) {
         super("client from server");
-        this.clientCount += 1;
+        super.clientCount += 1;
         this.clientSock = clientSocket;
         super.bufferedStreams = super.createBufferedStreams(this.clientSock);
         //log.info("made a new client from accept");
     }
 
     //this method writes a message to our socket
+    @Override
     public synchronized void write(String message) {
         BufferedWriter out = (BufferedWriter) super.getBufferedOutputStream();
         try {
-            
+
             //message.substring(0, 20);
             System.out.println(message.length());
             out.write(message);
-
             out.write("\n");
             out.flush();
             System.out.println("wrote");
@@ -65,14 +58,7 @@ public class clientSocket extends baseSocket {
     }
 
     public void setCONNECTION_REQUESTdetails(Document handshakeDetails) {
-        if (super.type.equals("client from config")) {
-            clientCount++;
-        }
-        Document hostport = (Document) handshakeDetails.get("hostPort");
-        this.connRequestServerPort = Integer.parseInt(hostport.get("port").toString());
-        this.connRequestHost = (String) ((Document) handshakeDetails.get("hostPort")).getString("host");
-        //System.out.printf("set port %d, host %s \n", connRequestServerPort, connRequestHost);
-
+        super.setCONNECTION_REQUESTdetails(handshakeDetails);
     }
 
     public String toString() {
@@ -82,11 +68,13 @@ public class clientSocket extends baseSocket {
         return details;
     }
 
+    @Override
     public String toHostport() {
 
-        return (clientSock.getRemoteSocketAddress().toString().split("/")[0]+ ":" + clientSock.getPort());
+        return (clientSock.getRemoteSocketAddress().toString().split("/")[0] + ":" + clientSock.getPort());
     }
 
+    /*
     //gets the port that the client initially either sent or received in 
     //the handshake request or response
     public Integer getconnRequestServerPort() {
@@ -97,7 +85,7 @@ public class clientSocket extends baseSocket {
     public String connRequestHost() {
         return this.connRequestHost;
     }
-
+     */
     @Override
     public void close() {
         super.socket = clientSock;
@@ -109,8 +97,8 @@ public class clientSocket extends baseSocket {
     public boolean equals(Object obj) {
         if (obj instanceof clientSocket) {
             clientSocket other = (clientSocket) obj;
-            if ((this.connRequestServerPort == other.connRequestServerPort)
-                    && (this.connRequestHost == other.connRequestHost)) {
+            if ((this.getconnRequestServerPort() == other.getconnRequestServerPort())
+                    && (this.connRequestHost() == other.connRequestHost())) {
                 return true;
             }
             return false;
