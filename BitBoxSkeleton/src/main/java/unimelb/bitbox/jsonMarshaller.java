@@ -136,6 +136,7 @@ public class jsonMarshaller {
         FILE_BYTES_RESPONSE.append("length", length);
         FILE_BYTES_RESPONSE.append("content",
                 base64Handler.byteBufferToBase64(content));
+        System.out.println(base64Handler.byteBufferToBase64(content).length());
         FILE_BYTES_RESPONSE.append("message", message.getValue());
         if (message == Messages.successfulRead) {
             FILE_BYTES_RESPONSE.append("status", true);
@@ -217,14 +218,14 @@ public class jsonMarshaller {
         Document AUTH_REQUEST = new Document();
         AUTH_REQUEST.append("command","AUTH_REQUEST");
         AUTH_REQUEST.append("identity", identity);
-        return AUTH_REQUEST.toString();
+        return AUTH_REQUEST.toJson();
     }
     static String createAUTH_RESPONSE(){
         Document AUTH_RESPONSE = new Document();
         AUTH_RESPONSE.append("command","AUTH_RESPONSE");
         AUTH_RESPONSE.append("status", false);
         AUTH_RESPONSE.append("message", Messages.publicKeyNotFound.getValue());
-        return AUTH_RESPONSE.toString();
+        return AUTH_RESPONSE.toJson();
     }
     static String createAUTH_RESPONSE(String key){
         Document AUTH_RESPONSE = new Document();
@@ -232,12 +233,12 @@ public class jsonMarshaller {
         AUTH_RESPONSE.append("AES128", key);
         AUTH_RESPONSE.append("status", true);
         AUTH_RESPONSE.append("message",Messages.publicKeyFound.getValue());
-        return AUTH_RESPONSE.toString();
+        return AUTH_RESPONSE.toJson();
     }
     static String createLIST_PEERS_REQUEST(){
         Document LIST_PEERS_REQUEST = new Document();
         LIST_PEERS_REQUEST.append("command","LIST_PEERS_REQUEST");
-        return LIST_PEERS_REQUEST.toString();
+        return LIST_PEERS_REQUEST.toJson();
     }
     static String createLIST_PEERS_RESPONSE(){
         Document LIST_PEERS_RESPONSE = new Document();
@@ -252,14 +253,14 @@ public class jsonMarshaller {
             peerleest.add(peers);
         }
         LIST_PEERS_RESPONSE.append("peers", peerleest);
-        return LIST_PEERS_RESPONSE.toString();
+        return LIST_PEERS_RESPONSE.toJson();
     }
     static String createClientCONNECT_PEER_REQUEST(HostPort peer){
         Document CONNECT_PEER_REQUEST = new Document();
         CONNECT_PEER_REQUEST.append("command","CONNECT_PEER_REQUEST");
         CONNECT_PEER_REQUEST.append("host", peer.host);
         CONNECT_PEER_REQUEST.append("port", peer.port);
-        return CONNECT_PEER_REQUEST.toString();
+        return CONNECT_PEER_REQUEST.toJson();
     }
     static String createClientCONNECT_PEER_RESPONSE(HostPort peer, Messages message){
         Document CONNECT_PEER_RESPONSE = new Document();
@@ -272,14 +273,14 @@ public class jsonMarshaller {
             CONNECT_PEER_RESPONSE.append("status", false);
         }
         CONNECT_PEER_RESPONSE.append("message", message.getValue());
-        return CONNECT_PEER_RESPONSE.toString();
+        return CONNECT_PEER_RESPONSE.toJson();
     }
     static String createDISCONNECT_PEER_REQUEST(HostPort peer){
         Document DISCONNECT_PEER_REQUEST = new Document();
         DISCONNECT_PEER_REQUEST.append("command","DISCONNECT_PEER_REQUEST");
         DISCONNECT_PEER_REQUEST.append("host", peer.host);
         DISCONNECT_PEER_REQUEST.append("port", peer.port);
-        return DISCONNECT_PEER_REQUEST.toString();
+        return DISCONNECT_PEER_REQUEST.toJson();
     }
     static String createDISCONNECT_PEER_RESPONSE(HostPort peer, Messages message){
         Document DISCONNECT_PEER_RESPONSE = new Document();
@@ -292,14 +293,14 @@ public class jsonMarshaller {
             DISCONNECT_PEER_RESPONSE.append("status", false);
         }
         DISCONNECT_PEER_RESPONSE.append("message", message.getValue());
-        return DISCONNECT_PEER_RESPONSE.toString();
+        return DISCONNECT_PEER_RESPONSE.toJson();
     }
     static String encryptMessage(SecretKey key, String messages ) {
         Document encryptedMessage = new Document();
         String cipherText = AESBitbox.encrypt(messages, key);
         encryptedMessage.append("payload", cipherText);
 
-        return encryptedMessage.toString();
+        return encryptedMessage.toJson();
     }
 
 

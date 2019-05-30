@@ -29,6 +29,7 @@ import unimelb.bitbox.util.Configuration;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
+import unimelb.bitbox.util.Document;
 
 public class RSAMain {
 
@@ -51,6 +52,20 @@ public class RSAMain {
 
 
         KeyFactory factory = KeyFactory.getInstance("RSA", "BC");
+
+        String message = jsonMarshaller.createLIST_PEERS_REQUEST();
+
+        LOGGER.info("creating messages");
+        //System.out.println(message);
+        prettyPrinter.print(message);
+        String encrypted = jsonMarshaller.encryptMessage(secret,message);
+        LOGGER.info("encrypted message");
+        Document received = Document.parse(encrypted);
+        LOGGER.info("received message");
+        String decrypted = AESBitbox.decrypt(received.getString("payload"),secret);
+        LOGGER.info("Message decrypted");
+        //System.out.println(Document.parse(decrypted));
+        prettyPrinter.print(decrypted);
 
         try {
             priv = generatePrivateKey(factory, PRIVATE_KEY_FILE);
@@ -77,10 +92,11 @@ public class RSAMain {
                 //byte[] input = new byte[] { (byte)0xbe, (byte)0xef };
 
                 String inputString = "Testing";
-                byte[] input = secret.getEncoded();
+                byte[] input = jsonMarshaller.createLIST_PEERS_REQUEST().getBytes();
 
                 try{
-                    System.out.println("input : " + new String(input));
+                    System.out.println("input : " );
+                    //prettyPrinter.print(jsonMarshaller.createLIST_PEERS_REQUEST());
                     SecureRandom random = new SecureRandom();
                     //Cipher cipher1 = Cipher.getInstance("RSA/None/NoPadding", "BC");
                     Cipher cipher1 = Cipher.getInstance("RSA/ECB/PKCS1Padding","BC");
@@ -91,21 +107,25 @@ public class RSAMain {
                     Cipher cipher2 = Cipher.getInstance("RSA/ECB/PKCS1Padding","BC");
                     //Cipher cipher2 = Cipher.getInstance("RSA/None/NoPadding", "BC");
                     cipher2.init(Cipher.DECRYPT_MODE, priv);
-                    byte[] plainText = cipher2.doFinal(cipherText) ;
+                    byte[] plainText = cipher2.doFinal(cipherText);
 
                     if(Arrays.equals(input,plainText)){
                         LOGGER.info("encrypted and decrypted successfully");
                     } else {
                         LOGGER.info("What the fuck, it's not working!");
                     }
-                    System.out.println("plain : " + new String(plainText));
-
+                    System.out.println("plain : " );
+                    //prettyPrinter.print(new String(plainText));
+                    LOGGER.info("Public key bytes length: " + pub.getEncoded().length);
+                    LOGGER.info("Padding bytes length: " + (pub.getEncoded().length - secret.getEncoded().length ));
+                    /*
                     SecretKey secretDecrypted = AESBitbox.keyBytesToKey(plainText);
                     if(secret.equals(secretDecrypted)){
                         LOGGER.info("same keys");
                     } else {
                         LOGGER.info("What the fuck, it's not working!");
                     }
+                    */
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

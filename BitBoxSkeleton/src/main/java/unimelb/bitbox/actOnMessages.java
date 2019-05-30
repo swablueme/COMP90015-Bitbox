@@ -76,6 +76,7 @@ public class actOnMessages implements Runnable {
         } else {
             position = (long) 0;
             length = Math.min(blocksize, unmarshalledmessage.getFileSize());
+            System.out.println("0");
         }
         return jsonMarshaller.createFILE_BYTES_REQUEST(unmarshalledmessage.getFileDescriptorDocument(), pathname, position, length);
     }
