@@ -29,7 +29,6 @@ import unimelb.bitbox.util.Configuration;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
-import unimelb.bitbox.util.Document;
 
 public class RSAMain {
 
@@ -52,20 +51,6 @@ public class RSAMain {
 
 
         KeyFactory factory = KeyFactory.getInstance("RSA", "BC");
-
-        String message = jsonMarshaller.createLIST_PEERS_REQUEST();
-
-        LOGGER.info("creating messages");
-        //System.out.println(message);
-        prettyPrinter.print(message);
-        String encrypted = jsonMarshaller.encryptMessage(secret,message);
-        LOGGER.info("encrypted message");
-        Document received = Document.parse(encrypted);
-        LOGGER.info("received message");
-        String decrypted = AESBitbox.decrypt(received.getString("payload"),secret);
-        LOGGER.info("Message decrypted");
-        //System.out.println(Document.parse(decrypted));
-        prettyPrinter.print(decrypted);
 
         try {
             priv = generatePrivateKey(factory, PRIVATE_KEY_FILE);

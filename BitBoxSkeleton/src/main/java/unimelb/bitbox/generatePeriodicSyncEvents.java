@@ -6,7 +6,7 @@ public class generatePeriodicSyncEvents implements Runnable {
 
     private void timedEvents() {
         try {
-//            System.out.println("==================SYNCING NOW KAI==================");
+            System.out.println("syncing");
             Integer syncInterval = Integer.parseInt(Configuration.getConfiguration().get("syncInterval"));
             Thread.sleep(syncInterval * 1000);
             actOnMessages.generateSyncEvents();

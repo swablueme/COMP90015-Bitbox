@@ -8,6 +8,7 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
+import unimelb.bitbox.util.HostPort;
 
 public class udpSocket extends baseSocket {
 
@@ -51,12 +52,14 @@ public class udpSocket extends baseSocket {
     public synchronized void write(String message) {
         try {
             byte[] buffer = message.getBytes();
+            Document toRecord = Document.parse(message);
+            determineNeedsResending.addMessage(toHostport(), toRecord);
             //if (super.connRequestServerPort == null && super.connRequestHost == null) {
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length, handshakeHost, this.handshakePort);
             //}
-            System.out.println(buffer.length);
             clientSock.send(packet);
-            //System.out.println("wrote to: "+toHostport());
+
+            System.out.println("WROTE:"+toRecord);
             prettyPrinter.print(message);
         } catch (Exception e) {
             System.out.println("failed to write message");
