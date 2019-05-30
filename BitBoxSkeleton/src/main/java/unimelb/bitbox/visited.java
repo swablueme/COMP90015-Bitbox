@@ -5,7 +5,7 @@ import unimelb.bitbox.util.HostPort;
 import java.util.ArrayList;
 
 public class visited {
-    public static ArrayList<HostPort> visited = new ArrayList<>() ;
+    public static ArrayList<HostPort> visited = new ArrayList<>();
 
     public synchronized static void addElement(HostPort element) {
         visited.add(element);

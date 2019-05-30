@@ -10,6 +10,8 @@ import java.net.InetAddress;
 import java.io.*;
 import org.json.JSONException;
 import java.util.*;
+import java.util.Date;
+
 
 public class pleaseworkClient<T extends baseSocket> implements Runnable {
 
@@ -34,8 +36,13 @@ public class pleaseworkClient<T extends baseSocket> implements Runnable {
         //and instead from configuration then it is the first one to try sending
         //requests
         if (myclient.type != "client from server") {
+            if (Peer.mode.equals("udp")) {
+                //System.out.println("INITIALISING=======");
+                //System.out.println(((udpSocket) myclient).toHostport());
+                //new Thread(() -> determineNeedsResending.addConnected(((udpSocket) myclient).toHostport())).start();
+            }
             myclient.write(jsonMarshaller.createHANDSHAKE(this.myhost, this.myport, "HANDSHAKE_REQUEST"));
-            System.out.println("current queue is: " + this.peerQueue.toString());
+            //System.out.println("current queue is: " + this.peerQueue.toString());
             System.out.println("Connecting to: " + myclient.toHostport());
         }
     }
@@ -91,7 +98,6 @@ public class pleaseworkClient<T extends baseSocket> implements Runnable {
                     }
 
                 } else {
-                    System.out.println("trying to read UDP");
                     byte[] buffer = new byte[30000];
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
@@ -107,7 +113,7 @@ public class pleaseworkClient<T extends baseSocket> implements Runnable {
                     }
 
                     Document message = Document.parse(receivedString);
-                    System.out.println(message.toString());
+                    
                     new Thread(readMessages(message, packet.getAddress(), packet.getPort())).start();
                     System.out.println("found peer is: " + foundPeer);
                     if (foundPeer == false) {
@@ -134,7 +140,10 @@ public class pleaseworkClient<T extends baseSocket> implements Runnable {
         if (OriginalSender.length == 2) {
             address = (InetAddress) OriginalSender[0];
             port = (Integer) OriginalSender[1];
+            
             this.myclient.setHostPort(address, port);
+            new Thread(() -> determineNeedsResending.processReply(myclient.toHostport(), message)).start();
+
         }
         //if we are the client connecting to another server
         System.out.println("parsing");
@@ -146,6 +155,7 @@ public class pleaseworkClient<T extends baseSocket> implements Runnable {
                     peerList.addKnownPeers((clientSocket) myclient);
                     foundPeer = true;
                     System.out.println("our peerlist is now: " + peerList.getPeers());
+                    
                     actOnMessages.generateSyncEvents();
                 } else {
                     System.out.println("Oops!Duplicate connections!");
@@ -157,6 +167,7 @@ public class pleaseworkClient<T extends baseSocket> implements Runnable {
                     udpPeerList.addKnownPeers(((udpSocket) myclient).clone());
                     foundPeer = true;
                     System.out.println("our udp peerlist is now: " + udpPeerList.getPeers());
+                    //try adding them to the message list of doom
                     actOnMessages.generateSyncEvents();
                 } else {
                     System.out.println("Oppps!Duplicate connections!");
@@ -196,6 +207,7 @@ public class pleaseworkClient<T extends baseSocket> implements Runnable {
                         System.out.println("our udp peerlist is now: " + udpPeerList.getPeers());
                         myclient.write(jsonMarshaller.createHANDSHAKE(this.myhost, this.myport, "HANDSHAKE_RESPONSE"));
                         foundPeer = true;
+
                         actOnMessages.generateSyncEvents();
                     } //if our list is too full already
                     else {
@@ -213,7 +225,6 @@ public class pleaseworkClient<T extends baseSocket> implements Runnable {
             //if we the peer got rejected
         } else if (message.getString(
                 "command").equals("CONNECTION_REFUSED")) {
-            //TODO： Determine if this connection is from command or Peer
             ArrayList<Document> receivedPeers = (ArrayList<Document>) message.get("peers");
             this.peerQueue.add(receivedPeers);
             while (!this.peerQueue.isEmpty()) {
