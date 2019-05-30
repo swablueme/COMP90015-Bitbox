@@ -90,12 +90,21 @@ public class Document {
 	
 	public static Document parse(String json) {
 		JSONParser parser = new JSONParser();
-		try {
+		try {  
+                    /*
+                        for(int i = 0; i<json.length(); i++) {
+                            System.out.println("i: "+i+"char: "+json.charAt(i));
+
+                        }
+                        */
 			JSONObject obj  = (JSONObject) parser.parse(json);
+                        
 			return new Document(obj);
 		} catch (ParseException e) {
+                        e.printStackTrace();
 			return new Document();
 		} catch (ClassCastException e){
+                        e.printStackTrace();
 			return new Document();
 		}
 	}
