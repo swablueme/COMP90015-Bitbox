@@ -17,6 +17,8 @@ public class exceptionHandler {
         } else if ((e instanceof UnknownHostException) || (e instanceof IOException)
                 || (e instanceof UnsupportedEncodingException) || (e instanceof NoSuchAlgorithmException)) {
             e.printStackTrace();
+        } else {
+            e.printStackTrace();
         }
         return;
     }
