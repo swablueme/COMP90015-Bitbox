@@ -12,7 +12,6 @@ import org.json.JSONException;
 import java.util.*;
 import java.util.Date;
 
-
 public class pleaseworkClient<T extends baseSocket> implements Runnable {
 
     T myclient = null;
@@ -113,15 +112,16 @@ public class pleaseworkClient<T extends baseSocket> implements Runnable {
                     }
 
                     Document message = Document.parse(receivedString);
-                    
+
                     new Thread(readMessages(message, packet.getAddress(), packet.getPort())).start();
                     System.out.println("found peer is: " + foundPeer);
-                    if (foundPeer == false) {
-                        System.out.println("Found peer was not found, exiting from socket");
-                        myclient.close();
-                        return;
+                    if (foundPeer != null) {
+                        if (foundPeer == false) {
+                            System.out.println("Found peer was not found, exiting from socket");
+                            myclient.close();
+                            return;
+                        }
                     }
-
                 }
             } catch (SocketException e) {
                 return;
@@ -140,7 +140,7 @@ public class pleaseworkClient<T extends baseSocket> implements Runnable {
         if (OriginalSender.length == 2) {
             address = (InetAddress) OriginalSender[0];
             port = (Integer) OriginalSender[1];
-            
+
             this.myclient.setHostPort(address, port);
             new Thread(() -> determineNeedsResending.processReply(myclient.toHostport(), message)).start();
 
@@ -155,7 +155,7 @@ public class pleaseworkClient<T extends baseSocket> implements Runnable {
                     peerList.addKnownPeers((clientSocket) myclient);
                     foundPeer = true;
                     System.out.println("our peerlist is now: " + peerList.getPeers());
-                    
+
                     actOnMessages.generateSyncEvents();
                 } else {
                     System.out.println("Oops!Duplicate connections!");
@@ -198,8 +198,7 @@ public class pleaseworkClient<T extends baseSocket> implements Runnable {
                         foundPeer = false;
                     }
                 }
-            }
-            else if (Peer.mode.equals("udp")) {
+            } else if (Peer.mode.equals("udp")) {
                 if (udpPeerList.isKnownPeer((udpSocket) myclient) != true) {
                     System.out.println("peer is unknown");
                     //try adding the peer and if it exceeds the count this will return false
