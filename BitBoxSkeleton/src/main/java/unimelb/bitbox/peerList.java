@@ -28,7 +28,7 @@ public class peerList {
     }
 
     //removes a peer from the peerlist
-    public static synchronized Boolean removeKnownPeers(udpSocket peer) {
+    public static synchronized Boolean removeKnownPeers(clientSocket peer) {
         return knownPeers.remove(peer);
     }
 

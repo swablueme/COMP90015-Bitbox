@@ -328,11 +328,39 @@ public class Peer {
                         //get the peer we are disconnecting
                         HostPort peer = new HostPort(commandRequest.getString("host"),
                                 commandRequest.getInteger("port"));
-                        Messages message1 = Messages.disconnectedFromPeer;
-                        Messages message2 = Messages.connectionNotActive;
+
+                        Messages messageToClient = null;
+
+                        if(mode.equals("tcp")){
+                            clientSocket myClient = new clientSocket(peer.host, peer.port);
+                            if(!peerList.isKnownPeer(myClient)){
+                                messageToClient = Messages.connectionNotActive;
+                            }else{
+                                try{
+                                    peerList.removeKnownPeers(myClient);
+                                }catch(Exception e) {
+                                    exceptionHandler.handleException(e);
+                                }
+                                messageToClient = Messages.disconnectedFromPeer;
+                            }
+                        }else{
+                            //TODO udp
+                            udpSocket myClient = new udpSocket(peer.host, peer.port);
+                            if(!udpPeerList.isKnownPeer(myClient)){
+                                messageToClient = Messages.connectionNotActive;
+                            }else{
+                                try{
+                                    udpPeerList.removeKnownPeers(myClient);
+                                }catch(Exception e) {
+                                    exceptionHandler.handleException(e);
+                                }
+                                messageToClient = Messages.disconnectedFromPeer;
+                            }
+                        }
+
 
                         //FIXME
-                        command_response = jsonMarshaller.createDISCONNECT_PEER_RESPONSE(peer, message2);
+                        command_response = jsonMarshaller.createDISCONNECT_PEER_RESPONSE(peer, messageToClient);
 
                     } else {
                         log.info("Incorrect command request");
