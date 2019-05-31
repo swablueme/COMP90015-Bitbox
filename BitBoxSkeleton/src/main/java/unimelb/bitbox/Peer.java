@@ -7,6 +7,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.logging.Logger;
 import java.net.Socket;
+import java.net.ConnectException;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import unimelb.bitbox.util.Configuration;
@@ -16,6 +17,7 @@ import unimelb.bitbox.jsonMarshaller.Messages;
 
 import org.bouncycastle.openssl.PEMParser;
 import org.apache.commons.codec.binary.Base64;
+
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import java.util.*;
@@ -105,7 +107,7 @@ public class Peer {
 
                     }
                 }
-                //wait some time for the CONNECTION_REFUSED to be added to the peerFinding list
+
             } catch (Exception e) {
                 //System.out.println("Issue");
                 exceptionHandler.handleException(e);
@@ -192,7 +194,7 @@ public class Peer {
 
                     //backup code: Cipher cipher1 = Cipher.getInstance("RSA/None/NoPadding", "BC");
 
-                    Cipher cipher1 = Cipher.getInstance("RSA/ECB/PKCS1Padding","BC");
+                    Cipher cipher1 = Cipher.getInstance("RSA/ECB/PKCS1Padding", "BC");
 
                     cipher1.init(Cipher.ENCRYPT_MODE, publicKey);
                     byte[] cipherText = cipher1.doFinal(keyBytes);
@@ -227,7 +229,7 @@ public class Peer {
             prettyPrinter.print(command_received);
             Document messageTwo = Document.parse(command_received);
             String command;
-            String command_response;
+            String command_response = null;
 
             //Check if it's encrypted as it is supposed to be
             if (messageTwo.containsKey("payload")) {
@@ -250,34 +252,72 @@ public class Peer {
                                 commandRequest.getInteger("port"));
 
                         //TODO Act on message
-                        Messages message1 = Messages.connectedToPeer;
-                        Messages message2 = Messages.connectionFailed;
-                        /* infinite loop that checks if we have found a peer
+                        Messages messageToClient = null;
 
-                        
-                         try {
-                         clientSocket myClient = new clientSocket(hostPort.host, hostPort.port);
-                         pleaseworkClient myClientinstance = new pleaseworkClient(myClient, host, Integer.parseInt(port));
-                         new Thread(myClientinstance).start();
-                         while (true) {
-                            if (myClient.foundPeer == false) {
-                                //then tell client it got rejected and the peerlist is full
-                                break;
-                        } else if (myClient.foundPeer == true) {
-                            //then tell client it got accepted
-                            break;
-                         } catch (Exception e instanceof ConnectException) {
-                         //tell the client that there was a connection error
-                         //prevent the execution of the next few lines
-                         }
-                        
-                        
-                         
-                         */
+                        if (mode.equals("tcp")) {
+                            try {
+                                clientSocket myClient = new clientSocket(peer.host, peer.port);
+                                if(peerList.isKnownPeer(myClient)){
+                                    messageToClient = Messages.connectedToPeer;
+                                }else{
+                                    pleaseworkClient myClientinstance = new pleaseworkClient(myClient, peer.host, peer.port);
+                                    new Thread(myClientinstance).start();
+                                    while (true) {
+                                     if (myClientinstance.foundPeer == false) {
+                                          //then tell client it got rejected and the peerlist is full
+                                            messageToClient = Messages.connectionFailed;
 
-                        //FIXME
-                        command_response = jsonMarshaller.createClientCONNECT_PEER_RESPONSE(peer, message1);
+                                            break;
+                                     } else if (myClientinstance.foundPeer == true) {
+                                         //then tell client it got accepted
+                                         messageToClient = Messages.connectedToPeer;
+                                          break;
+                                      }
+                                    }
+                                }
+                            } catch (Exception e) {
+                                //FIXME Will there be a excpetion for initiating a client with a fake socket?
+                                messageToClient = Messages.connectionFailed;
+                                exceptionHandler.handleException(e);
 
+                                //catch (Exception e instanceof ConnectException){
+                                //tell the client that there was a connection error
+                                //prevent the execution of the next few lines
+                            }
+
+                        }else{
+                            //TODO:udp
+                            try{
+                                udpSocket myClient = new udpSocket(peer.host, peer.port);
+                                if(udpPeerList.isKnownPeer(myClient)){
+                                    messageToClient = Messages.connectedToPeer;
+                                }else {
+                                    pleaseworkClient myClientinstance = new pleaseworkClient(myClient, peer.host, peer.port);
+                                    new Thread(myClientinstance).start();
+                                    while (true) {
+                                        if (myClientinstance.foundPeer == false) {
+                                            //then tell client it got rejected and the peerlist is full
+                                            messageToClient = Messages.connectionFailed;
+
+                                            break;
+                                        } else if (myClientinstance.foundPeer == true) {
+                                            //then tell client it got accepted
+                                            messageToClient = Messages.connectedToPeer;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }catch (Exception e) {
+                                //FIXME Will there be a excpetion for initiating a client with a fake socket?
+                                messageToClient = Messages.connectionFailed;
+                                exceptionHandler.handleException(e);
+
+                                //catch (Exception e instanceof ConnectException){
+                                //tell the client that there was a connection error
+                                //prevent the execution of the next few lines
+                            }
+                        }
+                        command_response = jsonMarshaller.createClientCONNECT_PEER_RESPONSE(peer, messageToClient);
                     } else if (command.equals("DISCONNECT_PEER_REQUEST")) {
 
                         //get the peer we are disconnecting

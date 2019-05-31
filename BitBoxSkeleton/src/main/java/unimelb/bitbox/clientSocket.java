@@ -1,8 +1,11 @@
 package unimelb.bitbox;
 
+import java.net.ConnectException;
 import java.net.Socket;
 import java.net.InetSocketAddress;
 import java.util.logging.Logger;
+
+import org.apache.maven.wagon.ConnectionException;
 import unimelb.bitbox.util.Document;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -27,6 +30,8 @@ public class clientSocket extends baseSocket {
 
         //log.info("made a new client from configuration file");
     }
+
+
 
     //create a new client from the accept
     clientSocket(Socket clientSocket) {
