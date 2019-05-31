@@ -14,6 +14,8 @@ public class exceptionHandler {
     public static void handleException(Exception e) {
         if (e instanceof ConnectException) {
             log.info("connection exception reached");
+
+
         } else if ((e instanceof UnknownHostException) || (e instanceof IOException)
                 || (e instanceof UnsupportedEncodingException) || (e instanceof NoSuchAlgorithmException)) {
             e.printStackTrace();
