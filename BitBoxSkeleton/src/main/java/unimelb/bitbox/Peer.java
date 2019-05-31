@@ -15,7 +15,7 @@ import unimelb.bitbox.util.Document;
 import unimelb.bitbox.util.HostPort;
 import unimelb.bitbox.jsonMarshaller.Messages;
 
-import org.bouncycastle.openssl.PEMParser;
+//import org.bouncycastle.openssl.PEMParser;
 import org.apache.commons.codec.binary.Base64;
 
 import javax.crypto.Cipher;
@@ -37,6 +37,7 @@ public class Peer {
 
     public static void main(String[] args) throws IOException, NumberFormatException, NoSuchAlgorithmException,
             NoSuchProviderException {
+        Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
 
         //loads up your file manager on the regular instance
         ServerMain instance = new ServerMain();
@@ -47,7 +48,7 @@ public class Peer {
         String clientPort = Configuration.getConfiguration().get("clientPort");
         String pubKeyConfig = Configuration.getConfiguration().get("authorized_keys");
 
-        log.info("HOST: " + host + "PORT: " + port);
+        log.info("THIS IS YOUR HOST: " + host + "PORT: " + port + "---------------");
 
         //Split all the public keys which are separated by commas from the config file
         Security.addProvider(new BouncyCastleProvider());
@@ -61,9 +62,8 @@ public class Peer {
         udpSocket myUDPClient = null;
         if (mode.equals("udp")) {
             udpSocket.setSocket(port);
-            
+
         }
-        
 
         for (String pubKeyString : pubKeys) {
             try {
@@ -84,7 +84,7 @@ public class Peer {
             }
 
         }
-        
+
         udpSocket toScheduleWrites = null;
         //add them to the queue
         for (String peer : mypeers) {
@@ -104,10 +104,9 @@ public class Peer {
                         udpSocket myClient = new udpSocket(hostPort.host, hostPort.port);
                         pleaseworkClient myClientinstance = new pleaseworkClient(myClient, host, Integer.parseInt(port));
                         toScheduleWrites = myClient;
-                        
+
                         visited.addElement(hostPort);
                         new Thread(myClientinstance).start();
-                        
 
                     }
                 }
@@ -118,7 +117,6 @@ public class Peer {
                 continue;
             }
         }
-        new Thread(new scheduledtask(toScheduleWrites)).start();
 
         // ==============================
         // Create a server thread
@@ -132,24 +130,34 @@ public class Peer {
         //start listening on client on client port
         new Thread(() -> listenOnClient(Integer.parseInt(clientPort), keys)).start();
 
+        System.out.println("starting scheduler");
+        new Thread(new scheduledtask(toScheduleWrites)).start();
+
     }
 
     public static void listenOnClient(Integer clientPort, HashMap<String, PublicKey> keys) {
+        System.out.println("HERE WE ARE");
         try {
+            System.out.println("ATTEMPTING TO MAKE SERVER SOCKET");
             ServerSocket serverSocket = new ServerSocket(clientPort);
+            System.out.println("SUCCESSFULLY MADE SERVER SOCKET");
 
             while (true) {
                 Socket client = serverSocket.accept();
-                new Thread(() -> connectToClient(client, keys));
+                System.out.println("ACCEPING SOCKET");
+                new Thread(() -> connectToClient(client, keys)).start();
 
             }
         } catch (Exception e) {
+            System.out.println("EXCEPTION IN LISTENONCLIENT");
+            e.printStackTrace();
             exceptionHandler.handleException(e);
         }
 
     }
 
     public static void connectToClient(Socket client, HashMap<String, PublicKey> keys) {
+        System.out.println("starting connectToClient Class");
 
         try {
             BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream(), "UTF-8"));
@@ -162,11 +170,17 @@ public class Peer {
             String received = null;
 
             //Receiving the auth request
-            if (in.ready()) {
-                received = in.readLine();
+            while (true) {
+                if (in.ready()) {
+                    received = in.readLine();
+                    if (received != null) {
+                        log.info("READING: ");
+                        prettyPrinter.print(received);
+                        break;
+                    }
+                }
             }
-            log.info("READING: ");
-            prettyPrinter.print(received);
+
             Document messageOne = Document.parse(received);
 
             //Check if it is a auth request
@@ -181,24 +195,21 @@ public class Peer {
 
                     //Turn the secret key to the key bytes for encryption
                     byte[] keyBytes = secretKey.getEncoded();
-
-                    //random generated for padding
-
-                    //SecureRandom random = new SecureRandom();
-                    //int publicKeySize = 256;
-                    //byte[] padding = new byte[ publicKeySize - keyBytes.length];
-                    //random.nextBytes(padding);
-                    //log.info("The length of secret key is" + keyBytes.length);
-                    //log.info("The padding size is " + padding.length);
-
-                    //merge two bytes array
-                    //ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                    //outputStream.write(keyBytes);
-                    //outputStream.write(padding);
-                    //byte[] key_padding = outputStream.toByteArray();
-
-                    //backup code: Cipher cipher1 = Cipher.getInstance("RSA/None/NoPadding", "BC");
-
+                    String s = new String(keyBytes);
+                    System.out.println(s);
+                            //random generated for padding
+                            //SecureRandom random = new SecureRandom();
+                            //int publicKeySize = 256;
+                            //byte[] padding = new byte[ publicKeySize - keyBytes.length];
+                            //random.nextBytes(padding);
+                            //log.info("The length of secret key is" + keyBytes.length);
+                            //log.info("The padding size is " + padding.length);
+                            //merge two bytes array
+                            //ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                            //outputStream.write(keyBytes);
+                            //outputStream.write(padding);
+                            //byte[] key_padding = outputStream.toByteArray();
+                            //backup code: Cipher cipher1 = Cipher.getInstance("RSA/None/NoPadding", "BC");
                     Cipher cipher1 = Cipher.getInstance("RSA/ECB/PKCS1Padding", "BC");
 
                     cipher1.init(Cipher.ENCRYPT_MODE, publicKey);
@@ -206,17 +217,22 @@ public class Peer {
                     String encodedEncryptedKey = Base64.encodeBase64String(cipherText);
                     String authResponse = jsonMarshaller.createAUTH_RESPONSE(encodedEncryptedKey);
                     out.write(authResponse + "\n");
+                    out.flush();
                     log.info("auth response sent");
                     prettyPrinter.print(authResponse);
 
                 } else {
-
+                    System.out.println("ATTEMPTING TO SEND AN AUTH RESPONSE BACK TO THE CLIENT");
                     //it is a valid request but the key is not in config so send back refuse response
                     String response = jsonMarshaller.createAUTH_RESPONSE();
+                    System.out.println("AUTH RESPONSE: " + response);
+                    System.out.println(response);
+                    System.out.println("SENDING TO THIS CLIENT SOCKET: " + client);
                     out.write(response + "\n");
                     out.flush();
                     log.info("auth response sent");
                     prettyPrinter.print(response);
+                    return;
                 }
             } else {
 
@@ -227,11 +243,17 @@ public class Peer {
 
             //Receiving the command request
             String command_received = null;
-            if (in.ready()) {
-                command_received = in.readLine();
+            while (true) {
+                if (in.ready()) {
+                    command_received = in.readLine();
+                    if (command_received != null) {
+                        log.info("READING FROM PEER: ");
+                        prettyPrinter.print(command_received);
+                        break;
+                    }
+                }
             }
-            log.info("READING: ");
-            prettyPrinter.print(command_received);
+
             Document messageTwo = Document.parse(command_received);
             String command;
             String command_response = null;
@@ -254,7 +276,7 @@ public class Peer {
 
                         //get the peer we are connecting
                         HostPort peer = new HostPort(commandRequest.getString("host"),
-                                commandRequest.getInteger("port"));
+                                (int) commandRequest.getLong("port"));
 
                         //TODO Act on message
                         Messages messageToClient = null;
@@ -262,41 +284,9 @@ public class Peer {
                         if (mode.equals("tcp")) {
                             try {
                                 clientSocket myClient = new clientSocket(peer.host, peer.port);
-                                if(peerList.isKnownPeer(myClient)){
+                                if (peerList.isKnownPeer(myClient)) {
                                     messageToClient = Messages.connectedToPeer;
-                                }else{
-                                    pleaseworkClient myClientinstance = new pleaseworkClient(myClient, peer.host, peer.port);
-                                    new Thread(myClientinstance).start();
-                                    while (true) {
-                                     if (myClientinstance.foundPeer == false) {
-                                          //then tell client it got rejected and the peerlist is full
-                                            messageToClient = Messages.connectionFailed;
-
-                                            break;
-                                     } else if (myClientinstance.foundPeer == true) {
-                                         //then tell client it got accepted
-                                         messageToClient = Messages.connectedToPeer;
-                                          break;
-                                      }
-                                    }
-                                }
-                            } catch (Exception e) {
-                                //FIXME Will there be a excpetion for initiating a client with a fake socket?
-                                messageToClient = Messages.connectionFailed;
-                                exceptionHandler.handleException(e);
-
-                                //catch (Exception e instanceof ConnectException){
-                                //tell the client that there was a connection error
-                                //prevent the execution of the next few lines
-                            }
-
-                        }else{
-                            //TODO:udp
-                            try{
-                                udpSocket myClient = new udpSocket(peer.host, peer.port);
-                                if(udpPeerList.isKnownPeer(myClient)){
-                                    messageToClient = Messages.connectedToPeer;
-                                }else {
+                                } else {
                                     pleaseworkClient myClientinstance = new pleaseworkClient(myClient, peer.host, peer.port);
                                     new Thread(myClientinstance).start();
                                     while (true) {
@@ -312,7 +302,39 @@ public class Peer {
                                         }
                                     }
                                 }
-                            }catch (Exception e) {
+                            } catch (Exception e) {
+                                //FIXME Will there be a excpetion for initiating a client with a fake socket?
+                                messageToClient = Messages.connectionFailed;
+                                exceptionHandler.handleException(e);
+
+                                //catch (Exception e instanceof ConnectException){
+                                //tell the client that there was a connection error
+                                //prevent the execution of the next few lines
+                            }
+
+                        } else {
+                            //TODO:udp
+                            try {
+                                udpSocket myClient = new udpSocket(peer.host, peer.port);
+                                if (udpPeerList.isKnownPeer(myClient)) {
+                                    messageToClient = Messages.connectedToPeer;
+                                } else {
+                                    pleaseworkClient myClientinstance = new pleaseworkClient(myClient, peer.host, peer.port);
+                                    new Thread(myClientinstance).start();
+                                    while (true) {
+                                        if (myClientinstance.foundPeer == false) {
+                                            //then tell client it got rejected and the peerlist is full
+                                            messageToClient = Messages.connectionFailed;
+
+                                            break;
+                                        } else if (myClientinstance.foundPeer == true) {
+                                            //then tell client it got accepted
+                                            messageToClient = Messages.connectedToPeer;
+                                            break;
+                                        }
+                                    }
+                                }
+                            } catch (Exception e) {
                                 //FIXME Will there be a excpetion for initiating a client with a fake socket?
                                 messageToClient = Messages.connectionFailed;
                                 exceptionHandler.handleException(e);
@@ -327,37 +349,36 @@ public class Peer {
 
                         //get the peer we are disconnecting
                         HostPort peer = new HostPort(commandRequest.getString("host"),
-                                commandRequest.getInteger("port"));
+                        (int) commandRequest.getLong("port"));
 
                         Messages messageToClient = null;
 
-                        if(mode.equals("tcp")){
+                        if (mode.equals("tcp")) {
                             clientSocket myClient = new clientSocket(peer.host, peer.port);
-                            if(!peerList.isKnownPeer(myClient)){
+                            if (!peerList.isKnownPeer(myClient)) {
                                 messageToClient = Messages.connectionNotActive;
-                            }else{
-                                try{
+                            } else {
+                                try {
                                     peerList.removeKnownPeers(myClient);
-                                }catch(Exception e) {
+                                } catch (Exception e) {
                                     exceptionHandler.handleException(e);
                                 }
                                 messageToClient = Messages.disconnectedFromPeer;
                             }
-                        }else{
+                        } else {
                             //TODO udp
                             udpSocket myClient = new udpSocket(peer.host, peer.port);
-                            if(!udpPeerList.isKnownPeer(myClient)){
+                            if (!udpPeerList.isKnownPeer(myClient)) {
                                 messageToClient = Messages.connectionNotActive;
-                            }else{
-                                try{
+                            } else {
+                                try {
                                     udpPeerList.removeKnownPeers(myClient);
-                                }catch(Exception e) {
+                                } catch (Exception e) {
                                     exceptionHandler.handleException(e);
                                 }
                                 messageToClient = Messages.disconnectedFromPeer;
                             }
                         }
-
 
                         //FIXME
                         command_response = jsonMarshaller.createDISCONNECT_PEER_RESPONSE(peer, messageToClient);
@@ -384,8 +405,11 @@ public class Peer {
             log.info("command response ready to send");
             prettyPrinter.print(command_response);
             String encryptedCommandResponse = jsonMarshaller.encryptMessage(secretKey, command_response);
+            System.out.println("here, this is the encrypted: "+encryptedCommandResponse);
             out.write(encryptedCommandResponse + "\n");
+            System.out.println("attempting to write");
             out.flush();
+            System.out.println("attempting to flush");
             log.info("command response encrypted and sent");
 
             //Terminate the thread

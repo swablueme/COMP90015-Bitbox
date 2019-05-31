@@ -25,12 +25,13 @@ import org.apache.commons.codec.binary.Base64;
 import javax.crypto.spec.SecretKeySpec;
 
 public class Client {
+
     private static Logger log = Logger.getLogger(Client.class.getName());
     private static final String PRIVATE_KEY_FILE = "bitboxclient_rsa";
 
     public static void main(String[] args) throws IOException, NumberFormatException, NoSuchAlgorithmException,
-            NoSuchProviderException{
-
+            NoSuchProviderException {
+        Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
         String command = null;
         HostPort server = null;
         HostPort peer;
@@ -43,7 +44,7 @@ public class Client {
         KeyFactory factory = KeyFactory.getInstance("RSA", "BC");
 
         //fetch the private key and parse it
-        try  {
+        try {
             //read the private key file
             //parse the pem
             //convert PKCS#1 to PKCS#8
@@ -52,7 +53,7 @@ public class Client {
 
         } catch (IOException e) {
             log.warning("Could not read file " + PRIVATE_KEY_FILE);
-        } catch (InvalidKeySpecException e){
+        } catch (InvalidKeySpecException e) {
             log.warning("invalid key");
         }
 
@@ -62,7 +63,7 @@ public class Client {
         //Parser of command line arguments
         CmdLineParser cmdLineParser = new CmdLineParser(cmdLineArgs);
 
-        try{
+        try {
 
             cmdLineParser.parseArgument(args);
             command = cmdLineArgs.getCommand();
@@ -72,8 +73,7 @@ public class Client {
             log.info("the command is " + command);
             log.info("the peer connecting to is " + server.toString());
 
-
-        } catch (CmdLineException e){
+        } catch (CmdLineException e) {
 
             log.warning(e.getMessage());
 
@@ -83,44 +83,54 @@ public class Client {
 
         //Try to connect to the server (Peers) and ask to be authorized
         Socket socket = null;
-        try{
-            socket = new Socket(server.host,server.port);
+        try {
+            System.out.println("ATTEMPTING TO CONNECT TO: -----" + server.host + ":" + server.port);
+            socket = new Socket(server.host, server.port);
             log.info("Connection established");
 
-            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(),"UTF-8"));
-            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(),"UTF-8"));
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
+            BufferedWriter out = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream(), "UTF-8"));
 
             //Ask to be authorized
             String authrequest = jsonMarshaller.createAUTH_REQUEST(identity);
-            out.write( authrequest + "\n");
+            out.write(authrequest + "\n");
             out.flush();
             log.info("Auth request sent");
             prettyPrinter.print(authrequest);
 
             //wait for the server response
+            System.out.println("WAITING FOR SERVER RESPONSE");
             String received = null;
-            if(in.ready()){ received = in.readLine();}
+            while (true) {
+                if (in.ready()) {
+                    received = in.readLine();
+                    if (received != null) {
+                        log.info("authenticate response received");
 
-            log.info("authenticate response received");
+                        prettyPrinter.print(received);
+                        break;
+                    }
+                }
+            }
             Document authResponse = Document.parse(received);
-            prettyPrinter.print(received);
 
-            if(authResponse.getBoolean("status")){
+            if (authResponse.getBoolean("status")) {
 
                 //get the key bytes that has been encoded with 64
                 String encrypted_key = authResponse.getString("AES128");
                 log.info(authResponse.getString("message"));
 
                 //decoded and decrypted the key bytes
-                byte[] plainText = getDecrypted(Base64.decodeBase64(encrypted_key),privateKey);
+                byte[] plainText = getDecrypted(Base64.decodeBase64(encrypted_key), privateKey);
+                String s = new String(plainText);
+                System.out.println(s);
 
                 //extract the first 128 bytes
                 //byte[] keyBytes = Arrays.copyOfRange(plainText,0,127);
-
                 //generate the key from the key bytes
                 secretKey = AESBitbox.keyBytesToKey(plainText);
 
-            }else{
+            } else {
 
                 //if the key is not found in the Peer, then this client is unauthorized
                 log.info(authResponse.getString("message"));
@@ -130,17 +140,17 @@ public class Client {
 
             //After authentication, start sending encrypted request and wait for encrypted response
             String request = null;
-            if(command.equals("list_peers")){
+            if (command.equals("list_peers")) {
 
                 request = jsonMarshaller.createLIST_PEERS_REQUEST();
 
-            } else if (command.equals("connect_peer")){
+            } else if (command.equals("connect_peer")) {
 
                 //get the peer we are connecting
                 peer = cmdLineArgs.getPeer();
                 request = jsonMarshaller.createClientCONNECT_PEER_REQUEST(peer);
 
-            } else if (command.equals("disconnect_peer")){
+            } else if (command.equals("disconnect_peer")) {
 
                 //get the peer we are disconnecting
                 peer = cmdLineArgs.getPeer();
@@ -160,20 +170,28 @@ public class Client {
             log.info("command sent");
 
             String response = null;
-            if(in.ready()){response = in.readLine();}
+            while (true) {
+                if (in.ready()) {
+                    response = in.readLine();
+                    if (response!= null) {
+                        break;
+                    }
+                }
+            }
             Document encrypted_response = Document.parse(response);
             log.info("command response received");
-            if(encrypted_response.containsKey("payload")){
+            if (encrypted_response.containsKey("payload")) {
 
-                String decryptedMessage = AESBitbox.decrypt(encrypted_response.getString("payload"),secretKey);
+                String decryptedMessage = AESBitbox.decrypt(encrypted_response.getString("payload"), secretKey);
                 Document command_response = Document.parse(decryptedMessage);
-                prettyPrinter.print(decryptedMessage);}
+                prettyPrinter.print(decryptedMessage);
+            }
 
         } catch (UnknownHostException e) {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
-        } catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
 
@@ -181,11 +199,11 @@ public class Client {
         log.info("Terminating");
         System.exit(0);
 
-
     }
 
     /**
-     * A method to generate a private key object from the private key in pem file
+     * A method to generate a private key object from the private key in pem
+     * file
      *
      * @param factory
      * @param filename
@@ -203,14 +221,14 @@ public class Client {
         return factory.generatePrivate(privKeySpec);
     }
 
-    private static byte[] getDecrypted (byte[] cipherText, PrivateKey privateKey) throws NoSuchAlgorithmException,
+    private static byte[] getDecrypted(byte[] cipherText, PrivateKey privateKey) throws NoSuchAlgorithmException,
             NoSuchPaddingException, NoSuchProviderException, InvalidKeyException, IllegalBlockSizeException,
             BadPaddingException {
 
-        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding","BC");
+        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding", "BC");
         //Cipher cipher2 = Cipher.getInstance("RSA/None/NoPadding", "BC");
         cipher.init(Cipher.DECRYPT_MODE, privateKey);
-        byte[] plainText = cipher.doFinal(cipherText) ;
+        byte[] plainText = cipher.doFinal(cipherText);
 
         return plainText;
     }

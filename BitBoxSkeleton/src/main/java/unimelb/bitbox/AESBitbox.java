@@ -55,6 +55,7 @@ public class AESBitbox
             cipherTextBytes = Base64.getEncoder().encode(cipherTextBytes);
             // Convert cipherTextBytes into string
             cipherText = new String(cipherTextBytes);
+            System.out.println("HERE'S YOUR CIPHERTEXT: "+cipherText);
         }
         catch (NoSuchAlgorithmException e)
         {
