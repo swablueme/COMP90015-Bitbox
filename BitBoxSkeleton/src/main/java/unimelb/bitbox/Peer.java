@@ -32,6 +32,8 @@ public class Peer {
 
     public static String mode = Configuration.getConfiguration().get("mode");
     public static Integer bufferSize = Integer.parseInt(Configuration.getConfiguration().get("blockSize"));
+    public static Integer timeout = Integer.parseInt(Configuration.getConfiguration().get("timeout"));
+    public static Integer retries = Integer.parseInt(Configuration.getConfiguration().get("retries"));
 
     public static void main(String[] args) throws IOException, NumberFormatException, NoSuchAlgorithmException,
             NoSuchProviderException {
@@ -59,7 +61,9 @@ public class Peer {
         udpSocket myUDPClient = null;
         if (mode.equals("udp")) {
             udpSocket.setSocket(port);
+            
         }
+        
 
         for (String pubKeyString : pubKeys) {
             try {
@@ -80,7 +84,8 @@ public class Peer {
             }
 
         }
-
+        
+        udpSocket toScheduleWrites = null;
         //add them to the queue
         for (String peer : mypeers) {
             HostPort hostPort = new HostPort(peer);
@@ -93,17 +98,16 @@ public class Peer {
                         clientSocket myClient = new clientSocket(hostPort.host, hostPort.port);
                         pleaseworkClient myClientinstance = new pleaseworkClient(myClient, host, Integer.parseInt(port));
                         visited.addElement(hostPort);
-                        //System.out.println("visited list: " + visited.getList());
                         attemptedtoconnectclients.add(myClientinstance);
                         new Thread(myClientinstance).start();
                     } else {
                         udpSocket myClient = new udpSocket(hostPort.host, hostPort.port);
                         pleaseworkClient myClientinstance = new pleaseworkClient(myClient, host, Integer.parseInt(port));
-                        new Thread(new scheduledtask(myClient)).start();
+                        toScheduleWrites = myClient;
+                        
                         visited.addElement(hostPort);
-                        //System.out.println("starting");
                         new Thread(myClientinstance).start();
-                        break;
+                        
 
                     }
                 }
@@ -114,6 +118,7 @@ public class Peer {
                 continue;
             }
         }
+        new Thread(new scheduledtask(toScheduleWrites)).start();
 
         // ==============================
         // Create a server thread

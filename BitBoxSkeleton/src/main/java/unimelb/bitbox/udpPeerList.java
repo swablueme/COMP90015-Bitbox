@@ -19,8 +19,12 @@ public class udpPeerList {
     public static synchronized ArrayList<udpSocket> getPeerList() {
         return (ArrayList<udpSocket>) knownPeers.clone();
     }
-
-    //adds peers to the peerlist if it's not fulll
+    //removes a peer from the peerlist
+    public static synchronized Boolean removeKnownPeers(udpSocket peer) {
+       return knownPeers.remove(peer);
+    }
+    
+     //adds peers to the peerlist if it's not fulll
     public static synchronized Boolean addKnownPeers(udpSocket peer) {
         if ((knownPeers.size() - outgoing.size() + 1) <= Integer.parseInt(config.get("maximumIncommingConnections"))) {
             knownPeers.add(peer);
