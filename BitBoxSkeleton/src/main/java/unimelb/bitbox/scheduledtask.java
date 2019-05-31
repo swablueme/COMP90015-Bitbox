@@ -22,23 +22,18 @@ public class scheduledtask implements Runnable {
     }
 
     public void run() {
-        System.out.println("thread name: "+Thread.currentThread().getName());
         LocalDateTime dateTime = LocalDateTime.now();
         LocalDateTime dateTimein2 = dateTime.plus(Duration.of(Peer.timeout, ChronoUnit.SECONDS));
         while (true) {
             LocalDateTime current = LocalDateTime.now();
             HashMap<String, ArrayList<Document>> toSend = determineNeedsResending.getList();
             HashMap<Document, ArrayList<Object>> toSendDates = determineNeedsResending.getDateMap();
-            System.out.println("");
             for (String user : toSend.keySet()) {
                 ArrayList<Document> userMessages = toSend.get(user);
                 for (Document message : userMessages) {
                     ArrayList<Object> messageDateAndTries = toSendDates.get(message);
                     LocalDateTime toSendTime = (LocalDateTime) messageDateAndTries.get(0);    
                     if (current.isAfter(toSendTime) && (Integer) messageDateAndTries.get(1)<=Peer.retries) {
-                        System.out.println("user is currently: "+user);
-                        System.out.println("message is currently: "+message);
-                        System.out.println(messageDateAndTries);
                         String toSendMessage = message.toJson();
                         byte[] buffer = toSendMessage.getBytes();
                         try {
@@ -50,7 +45,7 @@ public class scheduledtask implements Runnable {
                             messageDateAndTries.set(0, ((LocalDateTime) messageDateAndTries.get(0)).plus(Duration.of(10, ChronoUnit.SECONDS)));
                             
                             this.socket.send(packet);
-                            System.out.println("SENNTTT");
+                            System.out.println("RESENDING: "+message);             
                             prettyPrinter.print(toSendMessage);
                         } catch (Exception e) {
                             exceptionHandler.handleException(e);
