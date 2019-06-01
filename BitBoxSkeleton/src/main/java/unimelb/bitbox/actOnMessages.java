@@ -64,6 +64,11 @@ public class actOnMessages implements Runnable {
         Long length = null;
         Long position = null;
         Long blocksize = Long.parseLong(Configuration.getConfiguration().get("blockSize"));
+        if(Peer.mode.equals("udp")){
+            if(blocksize > 8192){
+                blocksize = Long.valueOf(8192) ;
+            }
+        }
         if (!type.equals("FILE_CREATE_REQUEST")
                 && (!type.equals("FILE_MODIFY_REQUEST"))) {
             position = unmarshalledmessage.getPosition();
