@@ -32,11 +32,11 @@ public class actOnMessages implements Runnable {
             //we make a fileloader to hold what we are going to write in
             try {
                 //creates a file loader which the file goes into
-                isCreated=fileSystemManager.createFileLoader(pathname, md5, filesize, lastmodified);
+                isCreated = fileSystemManager.createFileLoader(pathname, md5, filesize, lastmodified);
                 Boolean checkedShortcut = fileSystemManager.checkShortcut(pathname);
                 if (checkedShortcut) {
                     status = jsonMarshaller.Messages.fileCreated;
-                } else if (isCreated){
+                } else if (isCreated) {
                     status = jsonMarshaller.Messages.ready;
                 } else {
                     status = jsonMarshaller.Messages.problemCreatingFile;
@@ -64,6 +64,11 @@ public class actOnMessages implements Runnable {
         Long length = null;
         Long position = null;
         Long blocksize = Long.parseLong(Configuration.getConfiguration().get("blockSize"));
+        if (Peer.mode.equals("udp")) {
+            if (blocksize > 8192) {
+                blocksize = Long.valueOf(8192);
+            }
+        }
         if (!type.equals("FILE_CREATE_REQUEST")
                 && (!type.equals("FILE_MODIFY_REQUEST"))) {
             position = unmarshalledmessage.getPosition();

@@ -51,7 +51,7 @@ public class udpSocket extends baseSocket {
     @Override
     public synchronized void write(String message) {
         Document messagejson = Document.parse(message);
-        if (udpPeerList.isKnownPeer(tonewString()) || messagejson.getString("command").contains("HANDSHAKE_") ||  messagejson.getString("command").contains("AUTH")) {
+        if (udpPeerList.isKnownPeer(tonewString()) || messagejson.getString("command").contains("HANDSHAKE_") ||  messagejson.getString("command").contains("AUTH")||  messagejson.getString("command").contains("LIST")) {
             try {
                 byte[] buffer = message.getBytes();
                 Document toRecord = Document.parse(message);

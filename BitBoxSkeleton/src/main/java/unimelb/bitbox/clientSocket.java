@@ -51,8 +51,6 @@ public class clientSocket extends baseSocket {
     public synchronized void write(String message) {
         BufferedWriter out = (BufferedWriter) super.getBufferedOutputStream();
         try {
-
-            //message.substring(0, 20);
             System.out.println(message.length());
             out.write(message);
             out.write("\n");

@@ -88,6 +88,7 @@ public class Peer {
 
         udpSocket toScheduleWrites = null;
         //add them to the queue
+        log.info("Trying to connect to the peers in the peerlist... this can take a while");
         for (String peer : mypeers) {
             HostPort hostPort = new HostPort(peer);
 
@@ -284,6 +285,7 @@ public class Peer {
                         if (mode.equals("tcp")) {
                             try {
                                 ArrayList<Object> result = peerList.isKnownPeer(peer.host + ":" + peer.port);
+                                System.out.println(result);
                                 if ((Boolean) result.get(0)) {
                                     messageToClient = Messages.connectedToPeer;
                                 } else {
@@ -415,6 +417,7 @@ public class Peer {
                             System.out.println(peer.port);
                             System.out.println("--------------");
                             ArrayList<Object> result = peerList.isKnownPeer(peer.host + ":" + peer.port);
+                            System.out.println(result);
                             if (!((Boolean) result.get(0))) {
                                 messageToClient = Messages.connectionNotActive;
                             } else {

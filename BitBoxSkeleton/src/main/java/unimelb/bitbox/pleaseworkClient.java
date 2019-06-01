@@ -155,7 +155,6 @@ public class pleaseworkClient<T extends baseSocket> implements Runnable {
                     peerList.addKnownPeers((clientSocket) myclient);
                     foundPeer = true;
                     System.out.println("our peerlist is now: " + peerList.getPeers());
-
                     actOnMessages.generateSyncEvents();
                 } else {
                     System.out.println("Oops!Duplicate connections!");
