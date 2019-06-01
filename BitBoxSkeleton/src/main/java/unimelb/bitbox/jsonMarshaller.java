@@ -246,11 +246,23 @@ public class jsonMarshaller {
         ArrayList<Document> peerleest = new ArrayList<>();
 
         //FIXME: Please check if the usage of peerList is correct
-        for (clientSocket peer : peerList.getPeerList()) {
+        if(Peer.mode.equals("tcp")){
+            for (clientSocket peer : peerList.getPeerList()) {
+                Document peers = new Document();
+                peers.append("host", peer.connRequestHost());
+                peers.append("port", peer.getconnRequestServerPort());
+                peerleest.add(peers);
+            }
+        }else{
+            for (udpSocket peer: udpPeerList.getPeerList()) {
             Document peers = new Document();
-            peers.append("host", peer.connRequestHost());
-            peers.append("port", peer.getconnRequestServerPort());
+            String hostport = peer.toHostport();
+            String [] split = hostport.split(":");
+            peers.append("host", split[0].substring(1));
+            peers.append("port",Integer.parseInt(split[1]));
             peerleest.add(peers);
+            }
+      
         }
         LIST_PEERS_RESPONSE.append("peers", peerleest);
         return LIST_PEERS_RESPONSE.toJson();

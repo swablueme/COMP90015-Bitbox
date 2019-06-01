@@ -38,17 +38,21 @@ public class ServerMain implements FileSystemObserver {
             if (!(peeroutputstreams.isEmpty())) {
                 for (clientSocket myclient : peeroutputstreams) {
                     //sends a fileSystem event that has been triggered into the output stream
-                    myclient.write(myjson);
+                    try {
+                        myclient.write(myjson);
+                    } catch (Exception e) {
+                    }
                 }
             }
 
         } else {
             System.out.println("writing event");
-            ArrayList<udpSocket> peers= udpPeerList.getPeerList();
-            System.out.println("peerlist: "+peers);
+            ArrayList<udpSocket> peers = udpPeerList.getPeerList();
+            System.out.println("peerlist: " + peers);
             if (!(peers.isEmpty())) {
                 for (udpSocket myclient : peers) {
-                    System.out.println("we are intending to write to: "+myclient.toHostport());
+                    System.out.println("we are intending to write to: " + myclient.toHostport());
+                    
                     myclient.write(myjson);
                 }
             }

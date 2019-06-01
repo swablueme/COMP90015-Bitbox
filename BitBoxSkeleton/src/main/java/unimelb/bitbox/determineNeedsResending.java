@@ -52,7 +52,7 @@ public class determineNeedsResending {
             System.out.println("adding document: " + message);
             messageListMap.put(user, currentMessages);
             ArrayList<Object> al = new ArrayList<>();
-            al.add(LocalDateTime.now().plus(Duration.of(10, ChronoUnit.SECONDS)));
+            al.add(LocalDateTime.now().plus(Duration.of(Peer.timeout, ChronoUnit.MILLIS)));
             al.add(0);
             dateMap.put(message, al);
 

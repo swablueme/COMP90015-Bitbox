@@ -41,7 +41,7 @@ public class udpSocket extends baseSocket {
         handshakePort = port;
         handshakeHost = host;
     }
-    
+
     @Override
     public udpSocket clone() {
         return new udpSocket(this.handshakeHost.getHostAddress(), this.handshakePort);
@@ -58,8 +58,7 @@ public class udpSocket extends baseSocket {
             DatagramPacket packet = new DatagramPacket(buffer, buffer.length, handshakeHost, this.handshakePort);
             //}
             clientSock.send(packet);
-
-            System.out.println("WROTE:"+toRecord);
+            System.out.println("WROTE:" + toRecord);
             prettyPrinter.print(message);
         } catch (Exception e) {
             System.out.println("failed to write message");
@@ -74,6 +73,10 @@ public class udpSocket extends baseSocket {
 
     public String toString() {
         return toHostport();
+    }
+
+    public String tonewString() {
+        return "/"+toHostport().split("/")[1];
     }
 
     @Override
@@ -97,6 +100,19 @@ public class udpSocket extends baseSocket {
     public void close() {
         super.socket = clientSock;
         super.close();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        String user = "/" + (o.toString()).split("/")[1];
+        String toCompare = "/" + (this.toString()).split("/")[1];
+        System.out.println("comparison string: " + user + "|with: " + toCompare);
+        if (user.equals(toCompare)) {
+            return true;
+        } else {
+            return false;
+        }
+
     }
 
 }

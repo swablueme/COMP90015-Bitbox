@@ -225,7 +225,7 @@ public class Client {
             NoSuchPaddingException, NoSuchProviderException, InvalidKeyException, IllegalBlockSizeException,
             BadPaddingException {
 
-        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding", "BC");
+        Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
         //Cipher cipher2 = Cipher.getInstance("RSA/None/NoPadding", "BC");
         cipher.init(Cipher.DECRYPT_MODE, privateKey);
         byte[] plainText = cipher.doFinal(cipherText);

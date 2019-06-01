@@ -57,7 +57,7 @@ public class RSA {
         return privateKey;
     }
     private static KeyFactory getKeyFactoryInstance() throws NoSuchAlgorithmException, NoSuchProviderException {
-        return KeyFactory.getInstance("RSA","BC");
+        return KeyFactory.getInstance("RSA", "BC");
     }
 
     private static String getDecrypted (PrivateKey privateKey, String encrypted) throws Exception {

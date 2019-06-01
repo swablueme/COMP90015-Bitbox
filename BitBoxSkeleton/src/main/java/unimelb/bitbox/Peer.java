@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 import java.net.DatagramSocket;
+import java.net.InetAddress;
 
 public class Peer {
 
@@ -32,8 +33,8 @@ public class Peer {
 
     public static String mode = Configuration.getConfiguration().get("mode");
     public static Integer bufferSize = Integer.parseInt(Configuration.getConfiguration().get("blockSize"));
-    public static Integer timeout = Integer.parseInt(Configuration.getConfiguration().get("timeout"));
-    public static Integer retries = Integer.parseInt(Configuration.getConfiguration().get("retries"));
+    public static Integer timeout = Integer.parseInt(Configuration.getConfiguration().get("udpTimeout"));
+    public static Integer retries = Integer.parseInt(Configuration.getConfiguration().get("udpRetries"));
 
     public static void main(String[] args) throws IOException, NumberFormatException, NoSuchAlgorithmException,
             NoSuchProviderException {
@@ -131,6 +132,31 @@ public class Peer {
         new Thread(() -> listenOnClient(Integer.parseInt(clientPort), keys)).start();
 
         System.out.println("starting scheduler");
+
+        String newpeer = "localhost:8116";
+        String newpeer2 = "localhost:8115";
+        String newpeer3 = "localhost:8114";
+        //System.out.println("list: " + udpPeerList.getPeers());
+        //if (!udpPeerList.isKnownPeer("/" + peer.host + ":" + peer.port)) {
+        System.out.println("TRYING PEERLIST");
+        System.out.println(peerList.getPeerList());
+        try {
+            System.out.println(peerList.isKnownPeer(newpeer));
+            System.out.println(peerList.isKnownPeer(newpeer2));
+            System.out.println(peerList.isKnownPeer(newpeer3));
+            Integer idx = (Integer) peerList.isKnownPeer(newpeer2).get(1);
+            System.out.println("Trying to get peer");
+            clientSocket needed = (peerList.getPeerList()).get(idx);
+            System.out.println(needed);
+            //System.out.println(udpPeerList.removeKnownPeers(udpPeerList.getPeerList().get(0)));
+            // System.out.println("changed list");
+        } catch (Exception e) {
+
+        }
+
+        System.out.println(udpPeerList.getPeerList());
+        System.out.println("[-----------------p");
+
         new Thread(new scheduledtask(toScheduleWrites)).start();
 
     }
@@ -197,20 +223,20 @@ public class Peer {
                     byte[] keyBytes = secretKey.getEncoded();
                     String s = new String(keyBytes);
                     System.out.println(s);
-                            //random generated for padding
-                            //SecureRandom random = new SecureRandom();
-                            //int publicKeySize = 256;
-                            //byte[] padding = new byte[ publicKeySize - keyBytes.length];
-                            //random.nextBytes(padding);
-                            //log.info("The length of secret key is" + keyBytes.length);
-                            //log.info("The padding size is " + padding.length);
-                            //merge two bytes array
-                            //ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                            //outputStream.write(keyBytes);
-                            //outputStream.write(padding);
-                            //byte[] key_padding = outputStream.toByteArray();
-                            //backup code: Cipher cipher1 = Cipher.getInstance("RSA/None/NoPadding", "BC");
-                    Cipher cipher1 = Cipher.getInstance("RSA/ECB/PKCS1Padding", "BC");
+                    //random generated for padding
+                    //SecureRandom random = new SecureRandom();
+                    //int publicKeySize = 256;
+                    //byte[] padding = new byte[ publicKeySize - keyBytes.length];
+                    //random.nextBytes(padding);
+                    //log.info("The length of secret key is" + keyBytes.length);
+                    //log.info("The padding size is " + padding.length);
+                    //merge two bytes array
+                    //ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+                    //outputStream.write(keyBytes);
+                    //outputStream.write(padding);
+                    //byte[] key_padding = outputStream.toByteArray();
+                    //backup code: Cipher cipher1 = Cipher.getInstance("RSA/None/NoPadding", "BC");
+                    Cipher cipher1 = Cipher.getInstance("RSA/ECB/PKCS1Padding");
 
                     cipher1.init(Cipher.ENCRYPT_MODE, publicKey);
                     byte[] cipherText = cipher1.doFinal(keyBytes);
@@ -283,10 +309,11 @@ public class Peer {
 
                         if (mode.equals("tcp")) {
                             try {
-                                clientSocket myClient = new clientSocket(peer.host, peer.port);
-                                if (peerList.isKnownPeer(myClient)) {
+                                ArrayList<Object> result = peerList.isKnownPeer(peer.host + ":" + peer.port);
+                                if ((Boolean) result.get(0)) {
                                     messageToClient = Messages.connectedToPeer;
                                 } else {
+                                    clientSocket myClient = new clientSocket(peer.host, peer.port);
                                     pleaseworkClient myClientinstance = new pleaseworkClient(myClient, peer.host, peer.port);
                                     new Thread(myClientinstance).start();
                                     while (true) {
@@ -315,10 +342,11 @@ public class Peer {
                         } else {
                             //TODO:udp
                             try {
-                                udpSocket myClient = new udpSocket(peer.host, peer.port);
-                                if (udpPeerList.isKnownPeer(myClient)) {
+                                //;
+                                if (udpPeerList.isKnownPeer("/" + peer.host + ":" + String.valueOf(peer.port))) {
                                     messageToClient = Messages.connectedToPeer;
                                 } else {
+                                    udpSocket myClient = new udpSocket(peer.host, peer.port);
                                     pleaseworkClient myClientinstance = new pleaseworkClient(myClient, peer.host, peer.port);
                                     new Thread(myClientinstance).start();
                                     while (true) {
@@ -349,17 +377,27 @@ public class Peer {
 
                         //get the peer we are disconnecting
                         HostPort peer = new HostPort(commandRequest.getString("host"),
-                        (int) commandRequest.getLong("port"));
+                                (int) commandRequest.getLong("port"));
+                        System.out.println("ATTEMPTING TO GET HOSTPORT ------");
 
                         Messages messageToClient = null;
 
                         if (mode.equals("tcp")) {
-                            clientSocket myClient = new clientSocket(peer.host, peer.port);
-                            if (!peerList.isKnownPeer(myClient)) {
+
+                            System.out.println("CHECKING IF IN LIST----");
+                            System.out.println(peer.host);
+                            System.out.println(peer.port);
+                            System.out.println("--------------");
+                            ArrayList<Object> result = peerList.isKnownPeer(peer.host + ":" + peer.port);
+                            if (!((Boolean) result.get(0))) {
                                 messageToClient = Messages.connectionNotActive;
                             } else {
                                 try {
-                                    peerList.removeKnownPeers(myClient);
+                                    Integer idx = (Integer) result.get(1);
+                                    System.out.println("Trying to get peer");
+                                    clientSocket needed = (clientSocket) result.get(2);
+                                    peerList.removeKnownPeers(needed);
+                                    System.out.println(peerList.getPeerList());
                                 } catch (Exception e) {
                                     exceptionHandler.handleException(e);
                                 }
@@ -367,12 +405,13 @@ public class Peer {
                             }
                         } else {
                             //TODO udp
-                            udpSocket myClient = new udpSocket(peer.host, peer.port);
-                            if (!udpPeerList.isKnownPeer(myClient)) {
+                            if (!udpPeerList.isKnownPeer("/" + peer.host + ":" + peer.port)) {
                                 messageToClient = Messages.connectionNotActive;
                             } else {
                                 try {
-                                    udpPeerList.removeKnownPeers(myClient);
+                                    Integer idx = udpPeerList.nuPeerlist.indexOf("/" + peer.host + ":" + peer.port);
+                                    udpPeerList.removeKnownPeers((udpPeerList.getPeerList()).get(idx));
+                                    System.out.println("After removing one peer, peer list is: " + udpPeerList.getPeerList());
                                 } catch (Exception e) {
                                     exceptionHandler.handleException(e);
                                 }
@@ -405,7 +444,7 @@ public class Peer {
             log.info("command response ready to send");
             prettyPrinter.print(command_response);
             String encryptedCommandResponse = jsonMarshaller.encryptMessage(secretKey, command_response);
-            System.out.println("here, this is the encrypted: "+encryptedCommandResponse);
+            System.out.println("here, this is the encrypted: " + encryptedCommandResponse);
             out.write(encryptedCommandResponse + "\n");
             System.out.println("attempting to write");
             out.flush();
