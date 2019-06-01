@@ -258,7 +258,11 @@ public class jsonMarshaller {
             Document peers = new Document();
             String hostport = peer.toHostport();
             String [] split = hostport.split(":");
-            peers.append("host", split[0].substring(1));
+            String udpHost = split[0];
+            if (udpHost.startsWith("/")){
+                udpHost = split[0].substring(1);
+            }
+            peers.append("host", udpHost);
             peers.append("port",Integer.parseInt(split[1]));
             peerleest.add(peers);
             }
