@@ -329,6 +329,7 @@ public class Peer {
                                         LocalDateTime due = current.plus(Duration.of(Peer.timeout * 4, ChronoUnit.MILLIS));
                                         if (udpPeerList.isKnownPeer(user) == true) {
                                             messageToClient = Messages.connectedToPeer;
+                                            actOnMessages.generateSyncEvents();
                                             break;
                                         } else if (udpPeerList.isKnownPeer(user) == false && current.isAfter(due)) {
                                             messageToClient = Messages.connectionFailed;

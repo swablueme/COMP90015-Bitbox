@@ -50,22 +50,27 @@ public class udpSocket extends baseSocket {
 //this method writes a message to our socket
     @Override
     public synchronized void write(String message) {
-        try {
-            byte[] buffer = message.getBytes();
-            Document toRecord = Document.parse(message);
-            determineNeedsResending.addMessage(toHostport(), toRecord);
-            //if (super.connRequestServerPort == null && super.connRequestHost == null) {
-            DatagramPacket packet = new DatagramPacket(buffer, buffer.length, handshakeHost, this.handshakePort);
-            //}
-            clientSock.send(packet);
-            System.out.println("WROTE:" + toRecord);
-            prettyPrinter.print(message);
-        } catch (Exception e) {
-            System.out.println("failed to write message");
-            prettyPrinter.print(message);
-            exceptionHandler.handleException(e);
+        Document messagejson = Document.parse(message);
+        if (udpPeerList.isKnownPeer(tonewString()) || messagejson.getString("command").contains("HANDSHAKE_") ||  messagejson.getString("command").contains("AUTH")) {
+            try {
+                byte[] buffer = message.getBytes();
+                Document toRecord = Document.parse(message);
+                determineNeedsResending.addMessage(toHostport(), toRecord);
+                //if (super.connRequestServerPort == null && super.connRequestHost == null) {
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length, handshakeHost, this.handshakePort);
+                //}
+                clientSock.send(packet);
+                System.out.println("WROTE:" + toRecord);
+                prettyPrinter.print(message);
+            } catch (Exception e) {
+                System.out.println("failed to write message");
+                prettyPrinter.print(message);
+                exceptionHandler.handleException(e);
+            }
         }
     }
+
+    
 
     public void setCONNECTION_REQUESTdetails(Document handshakeDetails) {
         super.setCONNECTION_REQUESTdetails(handshakeDetails);
@@ -76,7 +81,7 @@ public class udpSocket extends baseSocket {
     }
 
     public String tonewString() {
-        return "/"+toHostport().split("/")[1];
+        return "/" + toHostport().split("/")[1];
     }
 
     @Override
