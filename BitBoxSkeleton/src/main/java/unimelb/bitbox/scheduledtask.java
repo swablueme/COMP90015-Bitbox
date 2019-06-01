@@ -23,7 +23,7 @@ public class scheduledtask implements Runnable {
 
     public void run() {
         LocalDateTime dateTime = LocalDateTime.now();
-        LocalDateTime dateTimein2 = dateTime.plus(Duration.of(Peer.timeout, ChronoUnit.SECONDS));
+        LocalDateTime dateTimein2 = dateTime.plus(Duration.of(Peer.timeout, ChronoUnit.MILLIS));
         while (true) {
             LocalDateTime current = LocalDateTime.now();
             HashMap<String, ArrayList<Document>> toSend = determineNeedsResending.getList();
@@ -33,7 +33,7 @@ public class scheduledtask implements Runnable {
                 for (Document message : userMessages) {
                     ArrayList<Object> messageDateAndTries = toSendDates.get(message);
                     LocalDateTime toSendTime = (LocalDateTime) messageDateAndTries.get(0);    
-                    if (current.isAfter(toSendTime) && (Integer) messageDateAndTries.get(1)<=Peer.retries) {
+                    if (current.isAfter(toSendTime) && (Integer) messageDateAndTries.get(1)<Peer.retries) {
                         String toSendMessage = message.toJson();
                         byte[] buffer = toSendMessage.getBytes();
                         try {
@@ -42,10 +42,10 @@ public class scheduledtask implements Runnable {
                             System.out.println(InetAddress.getByName(newstring));
                             DatagramPacket packet = new DatagramPacket(buffer, buffer.length, InetAddress.getByName(newstring), Integer.parseInt(user.split(":")[1]));
                             messageDateAndTries.set(1, (Integer) messageDateAndTries.get(1)+1);
-                            messageDateAndTries.set(0, ((LocalDateTime) messageDateAndTries.get(0)).plus(Duration.of(10, ChronoUnit.SECONDS)));
+                            messageDateAndTries.set(0, ((LocalDateTime) messageDateAndTries.get(0)).plus(Duration.of(Peer.timeout, ChronoUnit.MILLIS)));
                             
                             this.socket.send(packet);
-                            System.out.println("RESENDING: "+message);             
+                            System.out.println("RESENDING: "+messageDateAndTries.get(1)+":"+message);             
                             prettyPrinter.print(toSendMessage);
                         } catch (Exception e) {
                             exceptionHandler.handleException(e);

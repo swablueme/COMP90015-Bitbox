@@ -130,33 +130,7 @@ public class Peer {
 
         //start listening on client on client port
         new Thread(() -> listenOnClient(Integer.parseInt(clientPort), keys)).start();
-
-        System.out.println("starting scheduler");
-
-        String newpeer = "localhost:8116";
-        String newpeer2 = "localhost:8115";
-        String newpeer3 = "localhost:8114";
-        //System.out.println("list: " + udpPeerList.getPeers());
-        //if (!udpPeerList.isKnownPeer("/" + peer.host + ":" + peer.port)) {
-        System.out.println("TRYING PEERLIST");
-        System.out.println(peerList.getPeerList());
-        try {
-            System.out.println(peerList.isKnownPeer(newpeer));
-            System.out.println(peerList.isKnownPeer(newpeer2));
-            System.out.println(peerList.isKnownPeer(newpeer3));
-            Integer idx = (Integer) peerList.isKnownPeer(newpeer2).get(1);
-            System.out.println("Trying to get peer");
-            clientSocket needed = (peerList.getPeerList()).get(idx);
-            System.out.println(needed);
-            //System.out.println(udpPeerList.removeKnownPeers(udpPeerList.getPeerList().get(0)));
-            // System.out.println("changed list");
-        } catch (Exception e) {
-
-        }
-
-        System.out.println(udpPeerList.getPeerList());
-        System.out.println("[-----------------p");
-
+        System.out.println("starting scheduler to resend notifs");
         new Thread(new scheduledtask(toScheduleWrites)).start();
 
     }
@@ -343,25 +317,76 @@ public class Peer {
                             //TODO:udp
                             try {
                                 //;
-                                if (udpPeerList.isKnownPeer("/" + peer.host + ":" + String.valueOf(peer.port))) {
+                                String user = "/" + peer.host + ":" + String.valueOf(peer.port);
+                                if (udpPeerList.isKnownPeer(user)) {
                                     messageToClient = Messages.connectedToPeer;
                                 } else {
                                     udpSocket myClient = new udpSocket(peer.host, peer.port);
                                     pleaseworkClient myClientinstance = new pleaseworkClient(myClient, peer.host, peer.port);
                                     new Thread(myClientinstance).start();
                                     while (true) {
-                                        if (myClientinstance.foundPeer == false) {
-                                            //then tell client it got rejected and the peerlist is full
+                                        LocalDateTime current = LocalDateTime.now();
+                                        LocalDateTime due = current.plus(Duration.of(Peer.timeout * 4, ChronoUnit.MILLIS));
+                                        if (udpPeerList.isKnownPeer(user) == true) {
+                                            messageToClient = Messages.connectedToPeer;
+                                            break;
+                                        } else if (udpPeerList.isKnownPeer(user) == false && current.isAfter(due)) {
                                             messageToClient = Messages.connectionFailed;
 
-                                            break;
-                                        } else if (myClientinstance.foundPeer == true) {
-                                            //then tell client it got accepted
-                                            messageToClient = Messages.connectedToPeer;
                                             break;
                                         }
                                     }
                                 }
+
+                                /**
+                                 * if (myClientinstance.foundPeer != null) { if
+                                 * (myClientinstance.foundPeer == false) {
+                                 * //then tell client it got rejected and the
+                                 * peerlist is full messageToClient =
+                                 * Messages.connectionFailed;
+                                 *
+                                 * break; } else if (myClientinstance.foundPeer
+                                 * == true) { //then tell client it got accepted
+                                 * messageToClient = Messages.connectedToPeer;
+                                 * break; } } / } }
+                                 *
+                                 * /*
+                                 * HashMap<String, ArrayList<Document>> toSend =
+                                 * determineNeedsResending.getList();
+                                 * HashMap<Document, ArrayList<Object>>
+                                 * toSendDates =
+                                 * determineNeedsResending.getDateMap();
+                                 * ArrayList<Document> userMessages =
+                                 * toSend.get(user);
+                                 * System.out.println("STARTING ONLINENESS");
+                                 * while (true) { if
+                                 * (udpPeerList.isKnownPeer(user) == false) {
+                                 * System.out.println("how many messages are
+                                 * there: " + userMessages.size()); if
+                                 * (userMessages.size() > 0) { Document message
+                                 * = userMessages.get(0); ArrayList<Object>
+                                 * messageDateAndTries =
+                                 * toSendDates.get(message); Integer tries =
+                                 * (Integer) messageDateAndTries.get(1);
+                                 * System.out.println("here are your messages
+                                 * and tries determining onlineness: " +
+                                 * messageDateAndTries); jsonunMarshaller
+                                 * producedmessage = new
+                                 * jsonunMarshaller(message);
+                                 * System.out.println(producedmessage.getCommand());
+                                 * if (tries >= Peer.retries &&
+                                 * (producedmessage.getCommand()).equals("HANDSHAKE_REQUEST"))
+                                 * { System.out.println("offline"); break;
+                                 * //then it's offline
+                                 *
+                                 * } else if (udpPeerList.isKnownPeer(user) ==
+                                 * true) { System.out.println("online"); break;
+                                 * }
+                                 *
+                                 * }
+                                 * } else { System.out.println("online"); break;
+                                 * } }
+                                 */
                             } catch (Exception e) {
                                 //FIXME Will there be a excpetion for initiating a client with a fake socket?
                                 messageToClient = Messages.connectionFailed;
