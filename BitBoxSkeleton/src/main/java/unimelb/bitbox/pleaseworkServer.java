@@ -18,6 +18,7 @@ public class pleaseworkServer implements Runnable {
     public void Servermain() {
         try {
             ServerSocket serverSocket = new ServerSocket(myport);
+
             while (true) {
                 Socket client = serverSocket.accept();       
                 clientSocket myclient = new clientSocket(client);

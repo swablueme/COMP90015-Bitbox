@@ -4,24 +4,35 @@ import unimelb.bitbox.util.Document;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import unimelb.bitbox.util.FileSystemManager.FileSystemEvent;
+import unimelb.bitbox.util.HostPort;
+
+import javax.crypto.SecretKey;
 
 public class jsonMarshaller {
 
     public enum Messages {
         ready("file loader ready"),
         fileDeleted("file deleted"),
+        fileExistWithSameContent("file already exists with matching content"),
         directoryCreated("directory created"),
         directoryDeleted("directory deleted"),
         unsafePathname("unsafe pathname given"),
         problemCreatingFile("there was a problem creating the file"),
         problemCreatingDirectory("there was a problem creating the directory"),
         problemDeletingFile("there was a problem deleting the file"),
+        problemModifyingFile("there was a problem modifying the file"),
         problemDeletingDirectory("there was a problem deleting the directory"),
         pathnameExists("pathname already exists"),
         pathnameNotExists("pathname does not exist"),
         successfulRead("successful read"),
         unsuccessfulRead("unsuccessful read"),
-        fileCreated("file created");
+        fileCreated("file created"),
+        publicKeyFound("public key found"),
+        publicKeyNotFound("public key not found"),
+        connectedToPeer("connected to peer"),
+        connectionFailed("connection failed"),
+        disconnectedFromPeer("disconnected from peer"),
+        connectionNotActive("connection not active");
 
         private String value;
 
@@ -125,6 +136,7 @@ public class jsonMarshaller {
         FILE_BYTES_RESPONSE.append("length", length);
         FILE_BYTES_RESPONSE.append("content",
                 base64Handler.byteBufferToBase64(content));
+        System.out.println(base64Handler.byteBufferToBase64(content).length());
         FILE_BYTES_RESPONSE.append("message", message.getValue());
         if (message == Messages.successfulRead) {
             FILE_BYTES_RESPONSE.append("status", true);
@@ -183,9 +195,9 @@ public class jsonMarshaller {
         DIRECTORY_CREATE_RESPONSE.append("pathName", pathName);
         DIRECTORY_CREATE_RESPONSE.append("message", message.getValue());
         if(message == Messages.directoryCreated){
-            DIRECTORY_CREATE_RESPONSE.append("status","true");
+            DIRECTORY_CREATE_RESPONSE.append("status",true);
         }else{
-            DIRECTORY_CREATE_RESPONSE.append("status","false");
+            DIRECTORY_CREATE_RESPONSE.append("status",false);
         }
         return DIRECTORY_CREATE_RESPONSE.toJson();
     }
@@ -202,5 +214,94 @@ public class jsonMarshaller {
 
         return DIRECTORY_DELETE_RESPONSE.toJson();
     }
+    static String createAUTH_REQUEST(String identity){
+        Document AUTH_REQUEST = new Document();
+        AUTH_REQUEST.append("command","AUTH_REQUEST");
+        AUTH_REQUEST.append("identity", identity);
+        return AUTH_REQUEST.toJson();
+    }
+    static String createAUTH_RESPONSE(){
+        Document AUTH_RESPONSE = new Document();
+        AUTH_RESPONSE.append("command","AUTH_RESPONSE");
+        AUTH_RESPONSE.append("status", false);
+        AUTH_RESPONSE.append("message", Messages.publicKeyNotFound.getValue());
+        return AUTH_RESPONSE.toJson();
+    }
+    static String createAUTH_RESPONSE(String key){
+        Document AUTH_RESPONSE = new Document();
+        AUTH_RESPONSE.append("command","AUTH_RESPONSE");
+        AUTH_RESPONSE.append("AES128", key);
+        AUTH_RESPONSE.append("status", true);
+        AUTH_RESPONSE.append("message",Messages.publicKeyFound.getValue());
+        return AUTH_RESPONSE.toJson();
+    }
+    static String createLIST_PEERS_REQUEST(){
+        Document LIST_PEERS_REQUEST = new Document();
+        LIST_PEERS_REQUEST.append("command","LIST_PEERS_REQUEST");
+        return LIST_PEERS_REQUEST.toJson();
+    }
+    static String createLIST_PEERS_RESPONSE(){
+        Document LIST_PEERS_RESPONSE = new Document();
+        LIST_PEERS_RESPONSE.append("command","LIST_PEERS_RESPONSE");
+        ArrayList<Document> peerleest = new ArrayList<>();
+
+        //FIXME: Please check if the usage of peerList is correct
+        for (clientSocket peer : peerList.getPeerList()) {
+            Document peers = new Document();
+            peers.append("host", peer.connRequestHost());
+            peers.append("port", peer.getconnRequestServerPort());
+            peerleest.add(peers);
+        }
+        LIST_PEERS_RESPONSE.append("peers", peerleest);
+        return LIST_PEERS_RESPONSE.toJson();
+    }
+    static String createClientCONNECT_PEER_REQUEST(HostPort peer){
+        Document CONNECT_PEER_REQUEST = new Document();
+        CONNECT_PEER_REQUEST.append("command","CONNECT_PEER_REQUEST");
+        CONNECT_PEER_REQUEST.append("host", peer.host);
+        CONNECT_PEER_REQUEST.append("port", peer.port);
+        return CONNECT_PEER_REQUEST.toJson();
+    }
+    static String createClientCONNECT_PEER_RESPONSE(HostPort peer, Messages message){
+        Document CONNECT_PEER_RESPONSE = new Document();
+        CONNECT_PEER_RESPONSE.append("command","CONNECT_PEER_RESPONSE");
+        CONNECT_PEER_RESPONSE.append("host", peer.host);
+        CONNECT_PEER_RESPONSE.append("port", peer.port);
+        if(message == Messages.connectedToPeer){
+            CONNECT_PEER_RESPONSE.append("status", true);
+        } else {
+            CONNECT_PEER_RESPONSE.append("status", false);
+        }
+        CONNECT_PEER_RESPONSE.append("message", message.getValue());
+        return CONNECT_PEER_RESPONSE.toJson();
+    }
+    static String createDISCONNECT_PEER_REQUEST(HostPort peer){
+        Document DISCONNECT_PEER_REQUEST = new Document();
+        DISCONNECT_PEER_REQUEST.append("command","DISCONNECT_PEER_REQUEST");
+        DISCONNECT_PEER_REQUEST.append("host", peer.host);
+        DISCONNECT_PEER_REQUEST.append("port", peer.port);
+        return DISCONNECT_PEER_REQUEST.toJson();
+    }
+    static String createDISCONNECT_PEER_RESPONSE(HostPort peer, Messages message){
+        Document DISCONNECT_PEER_RESPONSE = new Document();
+        DISCONNECT_PEER_RESPONSE.append("command","DISCONNECT_PEER_RESPONSE");
+        DISCONNECT_PEER_RESPONSE.append("host", peer.host);
+        DISCONNECT_PEER_RESPONSE.append("port", peer.port);
+        if(message == Messages.disconnectedFromPeer){
+            DISCONNECT_PEER_RESPONSE.append("status", true);
+        } else {
+            DISCONNECT_PEER_RESPONSE.append("status", false);
+        }
+        DISCONNECT_PEER_RESPONSE.append("message", message.getValue());
+        return DISCONNECT_PEER_RESPONSE.toJson();
+    }
+    static String encryptMessage(SecretKey key, String messages ) {
+        Document encryptedMessage = new Document();
+        String cipherText = AESBitbox.encrypt(messages, key);
+        encryptedMessage.append("payload", cipherText);
+
+        return encryptedMessage.toJson();
+    }
+
 
 }
